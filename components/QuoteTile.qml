@@ -33,7 +33,7 @@ CursorSurface {
     anchors.bottom: parent.bottom
     width: Style.space(3)
     radius: width / 2
-    color: root.movementColor
+    color: Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.24)
   }
 
   Column {
@@ -57,7 +57,7 @@ CursorSurface {
     Text {
       width: parent.width
       text: root.stale ? "STALE" : String(root.quote && (root.quote.trade_session || root.quote.name) || "Waiting for quote…")
-      color: root.stale ? root.negativeColor : Qt.darker(root.textColor, 1.5)
+      color: Qt.darker(root.textColor, 1.5)
       font.family: root.panelFontFamily
       font.pixelSize: Style.font.caption
       font.bold: root.stale
@@ -102,4 +102,3 @@ CursorSurface {
     onClicked: root.activateRequested()
   }
 }
-

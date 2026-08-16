@@ -125,7 +125,13 @@ Panel {
     id: button
     anchors.fill: parent
     bar: root.bar
-    text: "◉"
+    text: ""
+    iconComponent: Component {
+      LongbridgeLogo {
+        foregroundColor: root.foreground
+        brandColors: false
+      }
+    }
     tooltipText: cli.quoteState === "live" ? "Longbridge · Updated" : "Longbridge · " + cli.quoteState
     active: cli.quoteState === "error" || cli.quoteState === "not_authenticated"
     onPressed: function(buttonCode) {
@@ -190,11 +196,11 @@ Panel {
             width: parent.width
             spacing: Style.space(10)
 
-            Text {
-              text: "◉"
-              color: root.foreground
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.title
+            LongbridgeLogo {
+              width: Style.space(20)
+              height: width
+              foregroundColor: root.foreground
+              brandColors: true
             }
 
             Column {
