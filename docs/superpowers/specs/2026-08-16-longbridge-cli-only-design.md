@@ -51,9 +51,13 @@ The manifest remains named `Longbridge` with ID `longbridge.omarchy`.
 
 ## Brand icon
 
-`LongbridgeLogo.qml` recreates the official seven-rectangle Longbridge mark from the referenced 69×69 SVG. It uses the original relative geometry: foreground bars at `(0,0,3,69)`, `(33,60,3,9)`, and `(53,43,9,26)`; teal `#00DBB6` at `(7,0,10,69)`; yellow `#FFE000` at `(21,60,9,9)`; and orange `#FC5200` at `(40,52,10,17)` and `(66,26,3,43)`.
+`LongbridgeLogo.qml` recreates the official seven-rectangle Longbridge mark from the referenced 69×69 SVG. It uses the original relative geometry: `(0,0,3,69)`, `(7,0,10,69)`, `(21,60,9,9)`, `(33,60,3,9)`, `(40,52,10,17)`, `(53,43,9,26)`, and `(66,26,3,43)`.
 
-The three originally black rectangles use an injected Omarchy foreground color so the mark remains legible in both dark and light themes. The component preserves a square aspect ratio, scales all geometry from the 69-unit source view box, and is used in the bar button, panel header, and portfolio account badge. No SVG is fetched at runtime and no bitmap asset is generated.
+The component supports two explicit treatments. In the bar, all seven rectangles use the injected Omarchy foreground color so the compact mark remains legible in both dark and light themes. Inside the panel header and portfolio account badge, the three originally black rectangles use the injected foreground color while the remaining rectangles use the official teal `#00DBB6`, yellow `#FFE000`, and orange `#FC5200`. A `brandColors` property selects the treatment.
+
+The component preserves a square aspect ratio and scales all geometry from the 69-unit source view box. No SVG is fetched at runtime and no bitmap asset is generated.
+
+Cards, quote tiles, position rows, borders, selection surfaces, and other containers use only neutral/theme colors. Red and green are reserved for numeric or textual rise/fall indicators; they are not used as item backgrounds, border accents, icons, or selection colors. The official colored Longbridge logo within the panel is a brand-identity exception, not a market-direction signal.
 
 ## Testing
 
