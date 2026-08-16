@@ -139,6 +139,33 @@ fn read_payload_from(path: &Path, machine_id: &str) -> Option<(EncryptedPayload,
     }
 }
 
+pub(crate) fn client_id_from_path(path: &Path, machine_id: &str) -> Result<String, String> {
+    read_payload_from(path, machine_id)
+        .map(|(payload, _)| payload.client_id)
+        .ok_or_else(|| "token could not be decrypted or parsed".to_string())
+}
+
+#[cfg(test)]
+pub(crate) fn write_test_token(
+    path: &Path,
+    machine_id: &str,
+    client_id: &str,
+    access_token: &str,
+    refresh_token: &str,
+) -> Result<(), String> {
+    write_payload_to(
+        path,
+        &EncryptedPayload {
+            client_id: client_id.to_string(),
+            access_token: access_token.to_string(),
+            refresh_token: Some(refresh_token.to_string()),
+            expires_at: 1_900_000_000,
+            logged_in_at: Some(1_700_000_000),
+        },
+        machine_id,
+    )
+}
+
 fn write_payload_to(
     path: &Path,
     payload: &EncryptedPayload,
@@ -189,7 +216,7 @@ fn machine_derived_key(machine_id: &str) -> Key<Aes256Gcm> {
     *Key::<Aes256Gcm>::from_slice(&key_bytes)
 }
 
-fn machine_id() -> &'static str {
+pub(crate) fn machine_id() -> &'static str {
     MACHINE_ID
         .get_or_init(|| match machine_uid::get() {
             Ok(id) => id,
