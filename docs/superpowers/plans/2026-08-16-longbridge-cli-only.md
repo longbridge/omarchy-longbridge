@@ -175,3 +175,41 @@ Expected: plugin validates, links at `$XDG_CONFIG_HOME/omarchy/plugins/longbridg
 git add README.md NOTICE docs/superpowers/specs/2026-08-16-omarchy-longbridge-design.md
 git commit -m "docs: document CLI-only Longbridge plugin"
 ```
+
+### Task 5: Theme-aware Longbridge brand icon
+
+**Files:**
+- Create: `components/LongbridgeLogo.qml`
+- Create: `tests/qml/tst_longbridge_logo.qml`
+- Modify: `Panel.qml`
+- Modify: `components/PortfolioView.qml`
+- Modify: `Makefile`
+
+**Interfaces:**
+- Consumes: `foregroundColor` supplied by the owning Omarchy surface.
+- Produces: a square `LongbridgeLogo` item whose seven rectangles scale from the official 69×69 source geometry.
+
+- [ ] **Step 1: Write a failing QML component test**
+
+Instantiate `LongbridgeLogo` at 69×69, locate its seven named rectangles, and assert the source geometry, brand colors, and injected foreground color.
+
+- [ ] **Step 2: Verify the QML test fails**
+
+Run: `/usr/lib/qt6/bin/qmltestrunner -input tests/qml -import components`
+Expected: FAIL because `LongbridgeLogo.qml` does not exist.
+
+- [ ] **Step 3: Implement and apply the icon**
+
+Create the seven-rectangle component with `scaleUnit = min(width,height)/69`. Replace the `◉` bar/header glyphs and the portfolio `◇` badge with `LongbridgeLogo`, preserving their existing layout dimensions.
+
+- [ ] **Step 4: Verify the icon and plugin**
+
+Run: `/usr/lib/qt6/bin/qmltestrunner -input tests/qml -import components && make validate`
+Expected: QML test PASS and full validation exit 0.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add components/LongbridgeLogo.qml tests/qml/tst_longbridge_logo.qml Panel.qml components/PortfolioView.qml Makefile
+git commit -m "feat: add theme-aware Longbridge icon"
+```
