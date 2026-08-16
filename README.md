@@ -2,15 +2,15 @@
 
 A compact Omarchy watchlist and Longbridge portfolio panel.
 
-The Watchlist uses a bundled Python standard-library helper to fetch public Yahoo Finance chart data. It never invokes the `longbridge` CLI for quotes. The Portfolio tab uses Longbridge Terminal for authenticated account data.
+The Watchlist loads your authenticated Longbridge groups and Longbridge prices. The Portfolio tab uses Longbridge Terminal for account data.
 
 ## Requirements
 
 - Omarchy
-- Python 3
+- Longbridge Terminal available on `PATH`
 - Internet access
 
-Longbridge Terminal and a verified login are mandatory before the normal panel opens. If the CLI is missing, the welcome page can install it from Longbridge's official installer and guide login. There is no skip action.
+Longbridge Terminal and a verified login are mandatory before the normal panel opens. The plugin welcome page verifies installation and login, and can guide recovery. There is no skip action.
 
 ## Install
 
@@ -45,15 +45,9 @@ Use `./install.sh --no-restart` to leave the current shell running. This script 
 
 ## Watchlist
 
-The compact Watchlist supports up to 20 canonical symbols:
+The compact Watchlist reads every group returned by `longbridge watchlist --format json`. Its group dropdown includes `all`, `holdings`, and custom groups in Longbridge order. The selected group is read-only; edit membership in Longbridge Terminal or another Longbridge client.
 
-- `AAPL.US`
-- `700.HK`
-- `600519.SH`
-- `000001.SZ`
-- `D05.SG`
-
-The helper maps those symbols to public provider symbols internally. Quotes refresh when the panel opens, after watchlist changes, on explicit refresh, and every five minutes while open. Partial failures retain the last available value and mark only affected rows.
+After loading membership, the plugin fetches prices with `longbridge quote … --format json`. It refreshes when the panel opens, when requested, and every five minutes while the Watchlist tab is active. Failures retain the last available membership and prices.
 
 Each 44-unit row shows the symbol, name, price, currency, and percentage movement. Selecting a row opens OHLC, volume, session, timestamp, and removal details.
 
@@ -90,7 +84,7 @@ It has no exit or destructive actions.
 
 ## Privacy and data sources
 
-The plugin does not read or copy Longbridge OAuth files. Setup and Portfolio launch the installed CLI, which owns authentication and account access. Watchlist requests contain only public ticker symbols and go to Yahoo Finance's chart endpoint. No trading or order placement is implemented.
+The plugin does not read or copy Longbridge OAuth files. Setup, Watchlist, quotes, and Portfolio launch the installed CLI, which owns authentication and account access. The Watchlist exposes no mutation commands. No trading or order placement is implemented.
 
 Red and green are reserved for rise/fall text. Icons, surfaces, selection, and borders remain theme-neutral; only the official logo in the panel header uses brand colors.
 
@@ -102,7 +96,7 @@ Run all checks with:
 make validate
 ```
 
-Automated tests use fixtures and fake executables. They do not contact Yahoo or Longbridge and do not read OAuth files.
+Automated tests use fixtures and fake executables. They do not contact Longbridge or read OAuth files.
 
 ## Update or remove
 
@@ -117,7 +111,6 @@ Removing the plugin does not remove Longbridge Terminal or its login.
 
 - Read-only; no order placement.
 - Watchlist data is polled and may be delayed, interrupted, or unavailable.
-- Public-provider symbol coverage can differ from Longbridge market coverage.
 - No historical portfolio chart.
 
 Longbridge for Omarchy is not investment advice.

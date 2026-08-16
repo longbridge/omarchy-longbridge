@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "author": "Longbridge",
   "license": "Apache-2.0",
-  "description": "Compact public watchlist quotes and Longbridge portfolio data in your Omarchy bar.",
+  "description": "Your Longbridge watchlist groups and portfolio in the Omarchy bar.",
   "kinds": [
     "bar-widget"
   ],
@@ -15,7 +15,7 @@
   },
   "barWidget": {
     "displayName": "Longbridge",
-    "description": "Follow public watchlist quotes and your Longbridge portfolio.",
+    "description": "Follow your Longbridge watchlist groups and portfolio.",
     "category": "Finance",
     "aliases": [
       "stocks",
@@ -25,13 +25,7 @@
     ],
     "allowMultiple": false,
     "defaultSection": "right",
-    "defaults": {
-      "watchlist": [
-        "AAPL.US",
-        "700.HK",
-        "D05.SG"
-      ]
-    },
+    "defaults": {},
     "schema": []
   }
 }

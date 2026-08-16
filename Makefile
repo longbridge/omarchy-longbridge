@@ -10,15 +10,12 @@ QML_FILES := Panel.qml WatchlistService.qml PortfolioService.qml \
 	components/WatchlistView.qml \
 	components/SymbolDetail.qml
 
-.PHONY: test test-python test-js test-qml test-install qml-check validate
+.PHONY: test test-js test-qml test-install qml-check validate
 
-test: test-python test-js test-qml test-install
-
-test-python:
-	PYTHONDONTWRITEBYTECODE=1 python -m unittest -v tests.test_longbridge_quotes
+test: test-js test-qml test-install
 
 test-js:
-	node --test tests/test_quote_adapter.js tests/test_cli_adapter.js tests/test_setup_adapter.js tests/test_model.js tests/test_portfolio_model.js
+	node --test tests/test_cli_adapter.js tests/test_setup_adapter.js tests/test_model.js tests/test_portfolio_model.js
 
 test-install:
 	bash tests/test_install.sh
