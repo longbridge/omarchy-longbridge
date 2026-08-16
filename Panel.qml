@@ -5,6 +5,7 @@ import Quickshell.Io
 import qs.Commons
 import qs.Ui
 import "Model.js" as Model
+import "PortfolioModel.js" as PortfolioModel
 import "components"
 
 Panel {
@@ -26,6 +27,8 @@ Panel {
   property bool detailOpen: false
   property double nowMs: Date.now()
   property string feedback: ""
+  property int activeTab: 0
+  property var portfolioState: PortfolioModel.initialState()
 
   function persistWatchlist(symbols) {
     var entry = { id: root.moduleName, watchlist: Model.normalizedSymbols(symbols) }
@@ -47,7 +50,7 @@ Panel {
       return
     }
     if (watchlist.length >= 20) {
-      feedback = "Market Pulse supports up to 20 symbols."
+      feedback = "Longbridge supports up to 20 symbols."
       return
     }
     persistWatchlist(watchlist.concat([symbol]))
@@ -81,13 +84,15 @@ Panel {
 
   onWatchlistChanged: {
     marketState = Model.initialState(watchlist)
-    bridge.symbols = watchlist
   }
 
-  QuoteBridge {
-    id: bridge
-    symbols: root.watchlist
-    onEventReceived: function(event) { root.marketState = Model.applyEvent(root.marketState, event) }
+  LongbridgeCli {
+    id: cli
+    watchlist: root.watchlist
+    panelOpen: root.opened
+    portfolioActive: root.activeTab === 1
+    onQuoteEvent: function(event) { root.marketState = Model.applyEvent(root.marketState, event) }
+    onPortfolioEvent: function(event) { root.portfolioState = PortfolioModel.applyEvent(root.portfolioState, event) }
   }
 
   Timer {
@@ -102,10 +107,10 @@ Panel {
     function open(): void { root.open() }
     function close(): void { root.close() }
     function toggle(): void { root.toggle() }
-    function reconnect(): string { bridge.restart(); return "ok" }
+    function reconnect(): string { cli.refreshQuotes(); return "ok" }
     function status(): string {
       return JSON.stringify({
-        connection: bridge.connectionState,
+        connection: cli.quoteState,
         symbols: root.watchlist,
         subscribed: root.marketState.subscribed,
         selected: root.selectedQuote ? root.selectedQuote.symbol : ""
@@ -121,8 +126,8 @@ Panel {
     anchors.fill: parent
     bar: root.bar
     text: "◉"
-    tooltipText: bridge.connectionState === "live" ? "Longbridge · Live" : "Longbridge · " + bridge.connectionState
-    active: bridge.connectionState === "error" || bridge.connectionState === "not_authenticated"
+    tooltipText: cli.quoteState === "live" ? "Longbridge · Updated" : "Longbridge · " + cli.quoteState
+    active: cli.quoteState === "error" || cli.quoteState === "not_authenticated"
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.LeftButton) root.toggle()
     }
@@ -134,7 +139,7 @@ Panel {
       width: Style.space(5)
       height: width
       radius: width / 2
-      color: bridge.connectionState === "live" ? Color.accent : (button.active ? root.urgent : root.foreground)
+      color: cli.quoteState === "live" ? Color.accent : (button.active ? root.urgent : root.foreground)
     }
   }
 
@@ -164,7 +169,9 @@ Panel {
       onTextKey: function(text) {
         var key = String(text || "").toLowerCase()
         if (key === "a") addField.forceActiveFocus()
-        else if (key === "r") bridge.restart()
+        else if (key === "r") cli.refreshQuotes()
+        else if (key === "m") root.activeTab = 0
+        else if (key === "p") root.activeTab = 1
       }
 
       Flickable {
@@ -203,7 +210,7 @@ Panel {
               }
               Text {
                 width: parent.width
-                text: root.watchlist.length + " symbols · " + bridge.connectionState
+                text: root.watchlist.length + " symbols · " + cli.quoteState
                 color: Qt.darker(root.foreground, 1.5)
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
@@ -211,20 +218,40 @@ Panel {
             }
           }
 
+          Row {
+            width: parent.width
+            spacing: Style.space(6)
+            Repeater {
+              model: ["Markets", "Portfolio"]
+              Rectangle {
+                required property string modelData
+                required property int index
+                implicitWidth: tabText.implicitWidth + Style.space(22)
+                implicitHeight: Style.space(30)
+                radius: height / 2
+                color: index === root.activeTab ? Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.15) : "transparent"
+                border.width: index === root.activeTab ? 1 : 0
+                border.color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.24)
+                Text { id: tabText; anchors.centerIn: parent; text: modelData; color: root.foreground; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: index === root.activeTab }
+                MouseArea { anchors.fill: parent; onClicked: root.activeTab = index }
+              }
+            }
+          }
+
           ConnectionBanner {
-            connectionState: bridge.connectionState
-            detail: bridge.message
+            visible: root.activeTab === 0
+            connectionState: cli.quoteState
+            detail: cli.quoteMessage
             textColor: root.foreground
             warningColor: root.urgent
             panelFontFamily: root.fontFamily
             onActionRequested: {
-              if (bridge.connectionState === "not_authenticated") bridge.login()
-              else bridge.restart()
+              cli.refreshQuotes()
             }
           }
 
           SymbolDetail {
-            visible: root.detailOpen && root.selectedQuote !== null
+            visible: root.activeTab === 0 && root.detailOpen && root.selectedQuote !== null
             quote: root.selectedQuote || ({})
             textColor: root.foreground
             panelFontFamily: root.fontFamily
@@ -233,7 +260,7 @@ Panel {
           }
 
           Column {
-            visible: !root.detailOpen
+            visible: root.activeTab === 0 && !root.detailOpen
             width: parent.width
             spacing: Style.space(8)
 
@@ -303,7 +330,21 @@ Panel {
             }
           }
 
+
+          PortfolioView {
+            visible: root.activeTab === 1
+            portfolio: root.portfolioState
+            loading: cli.portfolioLoading
+            bridgeMessage: cli.portfolioMessage
+            textColor: root.foreground
+            accentColor: Color.accent
+            warningColor: root.urgent
+            panelFontFamily: root.fontFamily
+            onRefreshRequested: cli.refreshPortfolio()
+          }
+
           Text {
+            visible: root.activeTab === 0
             width: parent.width
             text: "A add  ·  J/K select  ·  Enter detail  ·  X remove  ·  R reconnect"
             color: Qt.darker(root.foreground, 1.5)

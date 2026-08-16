@@ -1,2 +1,2 @@
 .worktrees/
-helper/target/
+*.log

@@ -1,12 +1,5 @@
-Omarchy Longbridge Market Pulse
+Longbridge for Omarchy
 Copyright 2026 Longbridge
 
-This product includes authentication and encrypted token-storage code adapted
-from Longbridge Terminal (https://github.com/longbridge/longbridge-terminal),
-licensed under the Apache License, Version 2.0.
-
-Source files:
-- src/secure_storage.rs
-- src/auth.rs
-- src/region.rs
-- src/openapi/context.rs
+This plugin invokes Longbridge Terminal as a separately distributed runtime
+dependency. It does not include Longbridge Terminal source code.

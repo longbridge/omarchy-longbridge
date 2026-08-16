@@ -1,5 +1,7 @@
 # Omarchy Longbridge Plugin Design
 
+> Superseded by `2026-08-16-longbridge-cli-only-design.md`. The implemented plugin uses Longbridge Terminal as its sole data and authentication boundary and contains no Rust helper.
+
 ## Purpose
 
 Build a publishable Omarchy Quattro bar-widget plugin that gives Longbridge users a fast, read-only view of real-time market quotes. The plugin shares OAuth credentials with `longbridge-terminal`, subscribes through the official Longbridge Rust SDK, and uses an original market-pulse interface rather than reproducing Stochi's chart-oriented watchlist.

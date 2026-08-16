@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "longbridge.omarchy",
+  "name": "Longbridge",
+  "version": "0.1.0",
+  "author": "Longbridge",
+  "license": "Apache-2.0",
+  "description": "Longbridge market quotes and portfolio data in your Omarchy bar.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "activation": "on-demand",
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Longbridge",
+    "description": "Follow Longbridge quotes and portfolio data through Longbridge Terminal.",
+    "category": "Finance",
+    "aliases": [
+      "stocks",
+      "quotes",
+      "markets",
+      "watchlist"
+    ],
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "watchlist": [
+        "AAPL.US",
+        "700.HK",
+        "D05.SG"
+      ]
+    },
+    "schema": []
+  }
+}

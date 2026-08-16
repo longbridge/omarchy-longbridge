@@ -40,10 +40,10 @@ CursorSurface {
 
     Text {
       width: parent.width
-      text: root.needsLogin ? "Connect Longbridge"
-        : root.connectionState === "live" ? "Live market stream"
-        : root.connectionState === "connecting" ? "Connecting to Longbridge"
-        : root.connectionState === "disconnected" ? "Stream interrupted"
+      text: root.needsLogin ? "Longbridge login required"
+        : root.connectionState === "live" ? "Market data updated"
+        : root.connectionState === "connecting" ? "Refreshing Longbridge"
+        : root.connectionState === "disconnected" ? "Refresh interrupted"
         : "Longbridge market data"
       color: root.textColor
       font.family: root.panelFontFamily
@@ -69,7 +69,7 @@ CursorSurface {
     anchors.rightMargin: Style.space(7)
     anchors.verticalCenter: parent.verticalCenter
     visible: root.needsLogin || root.failed
-    text: root.needsLogin ? "Connect" : "Retry"
+    text: "Retry"
     bordered: true
     foreground: root.textColor
     fontFamily: root.panelFontFamily
@@ -77,4 +77,3 @@ CursorSurface {
     onClicked: root.actionRequested()
   }
 }
-

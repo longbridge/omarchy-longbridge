@@ -1,0 +1,26 @@
+[
+  {
+    "symbol": "AAPL.US",
+    "last": "232.18",
+    "change_value": "+2.18",
+    "change_percentage": "+0.95%",
+    "prev_close": "230.00",
+    "open": "231.05",
+    "high": "233.20",
+    "low": "229.90",
+    "volume": 1234567,
+    "turnover": "286523456.78",
+    "status": "Normal",
+    "post_market": {
+      "last": "233.01",
+      "timestamp": "2026-08-16T20:10:00Z",
+      "high": "233.20",
+      "low": "231.90",
+      "volume": 12345,
+      "turnover": "2870000.00",
+      "prev_close": "232.18"
+    },
+    "overnight": null,
+    "pre_market": null
+  }
+]
