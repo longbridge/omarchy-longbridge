@@ -29,6 +29,18 @@ pub fn status() -> AuthState {
     status_from_paths(&registration, &token, secure_storage::machine_id())
 }
 
+pub fn effective_client_id() -> String {
+    let Ok(path) = registration_file_path() else {
+        return String::new();
+    };
+    let Ok(bytes) = std::fs::read(path) else {
+        return String::new();
+    };
+    serde_json::from_slice::<ClientRegistration>(&bytes)
+        .map(|registration| registration.client_id)
+        .unwrap_or_default()
+}
+
 fn status_from_paths(registration_path: &Path, token_path: &Path, machine_id: &str) -> AuthState {
     let Ok(registration_json) = std::fs::read(registration_path) else {
         return AuthState::NotAuthenticated;
