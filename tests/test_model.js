@@ -11,6 +11,48 @@ test("canonical Longbridge symbols are normalized, deduplicated, and capped", ()
   assert.equal(Model.symbolIsValid("BAD SYMBOL.US"), false)
 })
 
+test("CLI groups preserve order and default to all", () => {
+  const groups = [
+    { id: "2630", name: "all", securities: [
+      { symbol: "SPY.US", name: "SPDR S&P 500", market: "US", is_pinned: true },
+      { symbol: ".SPX.US", name: "S&P 500", market: "US", is_pinned: false }
+    ] },
+    { id: "-6", name: "holdings", securities: [] },
+    { id: "2628", name: "us", securities: [{ symbol: "SPY.US", name: "SPY", market: "US" }] }
+  ]
+  const state = Model.applyGroups(Model.initialState([]), groups, "2630")
+  assert.deepEqual(state.groups.map(group => group.name), ["all", "holdings", "us"])
+  assert.equal(state.activeGroupId, "2630")
+  assert.deepEqual(Model.rows(state).map(row => row.symbol), ["SPY.US", ".SPX.US"])
+  assert.equal(Model.rows(state)[0].name, "SPDR S&P 500")
+  assert.equal(Model.rows(state)[0].is_pinned, true)
+})
+
+test("empty holdings is selectable and missing selection returns to all", () => {
+  const groups = [
+    { id: "1", name: "all", securities: [{ symbol: "AAPL.US", name: "Apple" }] },
+    { id: "-6", name: "holdings", securities: [] }
+  ]
+  let state = Model.applyGroups(Model.initialState([]), groups, "1")
+  state = Model.selectGroup(state, "-6")
+  assert.equal(Model.activeGroup(state).name, "holdings")
+  assert.deepEqual(Model.rows(state), [])
+  state = Model.applyGroups(state, [groups[0]], "1")
+  assert.equal(state.activeGroupId, "1")
+})
+
+test("watchlist names override quote names after merge", () => {
+  const groups = [{ id: "1", name: "all", securities: [
+    { symbol: "AAPL.US", name: "Saved Apple Name", market: "US", is_pinned: false }
+  ] }]
+  let state = Model.applyGroups(Model.initialState([]), groups, "1")
+  state = Model.applyEvent(state, { type: "snapshot", quotes: [
+    { symbol: "AAPL.US", name: "Quote Apple Name", last: "10", prev_close: "9", timestamp: 100 }
+  ], errors: [] })
+  assert.equal(Model.rows(state)[0].name, "Saved Apple Name")
+  assert.equal(Model.rows(state)[0].last, "10")
+})
+
 test("snapshot and quote events reconcile without mutating previous state", () => {
   const original = Model.initialState(["AAPL.US", "700.HK"])
   const snap = Model.applyEvent(original, {

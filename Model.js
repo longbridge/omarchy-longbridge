@@ -28,6 +28,9 @@ function normalizedSymbols(values, maximum) {
 function initialState(symbols) {
   return {
     symbols: normalizedSymbols(symbols),
+    groups: [],
+    defaultGroupId: "",
+    activeGroupId: "",
     quotes: {},
     quoteErrors: {},
     subscribed: [],
@@ -35,6 +38,49 @@ function initialState(symbols) {
     auth: "unknown",
     error: null
   }
+}
+
+function applyGroups(state, groups, defaultGroupId) {
+  var next = copyObject(state || initialState([]))
+  var source = listLike(groups) ? groups : []
+  next.groups = []
+  for (var i = 0; i < source.length; i++) {
+    var group = source[i] || {}
+    var securities = []
+    var rows = listLike(group.securities) ? group.securities : []
+    for (var j = 0; j < rows.length; j++) securities.push(copyObject(rows[j] || {}))
+    next.groups.push({ id: String(group.id), name: String(group.name || ""), securities: securities })
+  }
+  next.defaultGroupId = String(defaultGroupId || "")
+  var activeExists = false
+  for (var k = 0; k < next.groups.length; k++)
+    if (next.groups[k].id === String(state && state.activeGroupId || "")) activeExists = true
+  next.activeGroupId = activeExists ? String(state.activeGroupId) : next.defaultGroupId
+  return next
+}
+
+function selectGroup(state, groupId) {
+  var wanted = String(groupId || "")
+  var next = copyObject(state || initialState([]))
+  next.groups = (state.groups || []).slice()
+  for (var i = 0; i < next.groups.length; i++) {
+    if (next.groups[i].id === wanted) {
+      next.activeGroupId = wanted
+      return next
+    }
+  }
+  return next
+}
+
+function activeGroup(state) {
+  var groups = state && state.groups ? state.groups : []
+  var wanted = String(state && state.activeGroupId || "")
+  for (var i = 0; i < groups.length; i++) if (String(groups[i].id) === wanted) return groups[i]
+  return null
+}
+
+function symbolKeyIsValid(value) {
+  return /^\S+\.[A-Z]{2}$/.test(normalizedSymbol(value))
 }
 
 function copyObject(source) {
@@ -69,7 +115,7 @@ function applyEvent(state, event) {
     var quotes = listLike(event.quotes) ? event.quotes : []
     for (var i = 0; i < quotes.length; i++) {
       var snapshotSymbol = normalizedSymbol(quotes[i] && quotes[i].symbol)
-      if (symbolIsValid(snapshotSymbol)) {
+      if (symbolKeyIsValid(snapshotSymbol)) {
         next.quotes[snapshotSymbol] = mergedQuote(next.quotes[snapshotSymbol], quotes[i])
         delete next.quoteErrors[snapshotSymbol]
       }
@@ -77,11 +123,11 @@ function applyEvent(state, event) {
     var errors = listLike(event.errors) ? event.errors : []
     for (var j = 0; j < errors.length; j++) {
       var errorSymbol = normalizedSymbol(errors[j] && errors[j].symbol)
-      if (symbolIsValid(errorSymbol)) next.quoteErrors[errorSymbol] = String(errors[j].message || "Quote unavailable.")
+      if (symbolKeyIsValid(errorSymbol)) next.quoteErrors[errorSymbol] = String(errors[j].message || "Quote unavailable.")
     }
   } else if (type === "quote") {
     var symbol = normalizedSymbol(event.symbol)
-    if (symbolIsValid(symbol)) next.quotes[symbol] = mergedQuote(next.quotes[symbol], event)
+    if (symbolKeyIsValid(symbol)) next.quotes[symbol] = mergedQuote(next.quotes[symbol], event)
   } else if (type === "subscription") {
     next.subscribed = normalizedSymbols(event.symbols)
     next.connection = "live"
@@ -103,12 +149,16 @@ function marketForSymbol(symbol) {
 
 function rows(state) {
   var result = []
-  var symbols = normalizedSymbols(state && state.symbols)
   var quotes = state && state.quotes ? state.quotes : {}
   var errors = state && state.quoteErrors ? state.quoteErrors : {}
-  for (var i = 0; i < symbols.length; i++) {
-    var symbol = symbols[i]
-    var row = mergedQuote({}, quotes[symbol] || { symbol: symbol })
+  var group = activeGroup(state)
+  var securities = group && listLike(group.securities) ? group.securities : null
+  var symbols = securities ? [] : normalizedSymbols(state && state.symbols)
+  var length = securities ? securities.length : symbols.length
+  for (var i = 0; i < length; i++) {
+    var security = securities ? securities[i] : { symbol: symbols[i] }
+    var symbol = normalizedSymbol(security.symbol)
+    var row = mergedQuote(quotes[symbol] || { symbol: symbol }, security)
     row.ready = !!quotes[symbol]
     row.errorMessage = String(errors[symbol] || "")
     result.push(row)
@@ -167,6 +217,9 @@ if (typeof module !== "undefined") module.exports = {
   symbolIsValid: symbolIsValid,
   normalizedSymbols: normalizedSymbols,
   initialState: initialState,
+  applyGroups: applyGroups,
+  selectGroup: selectGroup,
+  activeGroup: activeGroup,
   applyEvent: applyEvent,
   marketForSymbol: marketForSymbol,
   rows: rows,
