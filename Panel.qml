@@ -197,33 +197,21 @@ Panel {
           spacing: Style.space(9)
 
           LongbridgeLogo {
+            anchors.verticalCenter: parent.verticalCenter
             width: Style.space(20)
             height: width
             foregroundColor: root.foreground
             brandColors: true
           }
-          Column {
+          Text {
+            anchors.verticalCenter: parent.verticalCenter
             width: Math.max(0, contentColumn.width - Style.space(20) - panelMenu.width - Style.space(18))
-            spacing: 0
-            Text {
-              width: parent.width
-              text: "Longbridge"
-              color: root.foreground
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.title
-              font.bold: true
-              elide: Text.ElideRight
-            }
-            Text {
-              width: parent.width
-              text: root.activeTab === 0
-                ? root.watchlist.length + " public quotes"
-                : "Longbridge account portfolio"
-              color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.58)
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.caption
-              elide: Text.ElideRight
-            }
+            text: "Longbridge"
+            color: root.foreground
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.title
+            font.bold: true
+            elide: Text.ElideRight
           }
           PanelMenu {
             id: panelMenu
@@ -233,33 +221,45 @@ Panel {
           }
         }
 
-        Row {
+        Rectangle {
+          id: tabSegments
           visible: setup.ready
-          width: parent.width
-          spacing: Style.space(6)
-          Repeater {
-            model: ["Watchlist", "Portfolio"]
-            Rectangle {
-              required property string modelData
-              required property int index
-              implicitWidth: tabLabel.implicitWidth + Style.space(20)
-              implicitHeight: Style.space(28)
-              radius: height / 2
-              color: index === root.activeTab
-                ? Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
-                : "transparent"
-              border.width: index === root.activeTab ? 1 : 0
-              border.color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.18)
-              Text {
-                id: tabLabel
-                anchors.centerIn: parent
-                text: modelData
-                color: root.foreground
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.caption
-                font.bold: index === root.activeTab
+          width: Style.space(190)
+          implicitHeight: Style.space(28)
+          radius: 0
+          color: "transparent"
+          border.width: 1
+          border.color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.18)
+          Row {
+            anchors.fill: parent
+            Repeater {
+              model: ["Watchlist", "Portfolio"]
+              Rectangle {
+                required property string modelData
+                required property int index
+                width: tabSegments.width / 2
+                height: tabSegments.height
+                radius: 0
+                color: index === root.activeTab
+                  ? Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
+                  : "transparent"
+                Rectangle {
+                  visible: index === 1
+                  anchors.left: parent.left
+                  width: 1
+                  height: parent.height
+                  color: tabSegments.border.color
+                }
+                Text {
+                  anchors.centerIn: parent
+                  text: modelData
+                  color: root.foreground
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.caption
+                  font.bold: index === root.activeTab
+                }
+                TapHandler { onTapped: root.activeTab = index }
               }
-              TapHandler { onTapped: root.activeTab = index }
             }
           }
         }

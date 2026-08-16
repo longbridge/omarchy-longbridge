@@ -69,11 +69,14 @@ Column {
         font.pixelSize: Style.font.caption
       }
     }
-    Button {
+    PanelActionButton {
       id: refreshButton
-      text: "Refresh"
+      iconText: "󰑐"
+      tooltipText: "Refresh"
       foreground: root.textColor
-      bordered: true
+      fontFamily: root.panelFontFamily
+      size: Style.space(28)
+      bordered: false
       enabled: !root.loading
       onClicked: root.refreshRequested()
     }

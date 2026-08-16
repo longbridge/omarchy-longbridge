@@ -10,8 +10,8 @@ Item {
   required property color textColor
   required property string panelFontFamily
 
-  implicitWidth: menuButton.implicitWidth
-  implicitHeight: menuButton.implicitHeight
+  implicitWidth: Style.space(28)
+  implicitHeight: Style.space(28)
 
   function openLongbridge() {
     Quickshell.execDetached(["xdg-open", "https://longbridge.com"])

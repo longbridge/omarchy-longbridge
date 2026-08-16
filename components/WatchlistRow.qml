@@ -32,7 +32,7 @@ Rectangle {
     anchors.right: priceColumn.left
     anchors.rightMargin: Style.space(10)
     anchors.verticalCenter: parent.verticalCenter
-    spacing: 0
+    spacing: Style.space(4)
 
     Text {
       width: parent.width
@@ -58,7 +58,7 @@ Rectangle {
     anchors.right: parent.right
     anchors.rightMargin: Style.space(9)
     anchors.verticalCenter: parent.verticalCenter
-    spacing: 0
+    spacing: Style.space(4)
 
     Text {
       anchors.right: parent.right
