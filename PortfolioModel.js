@@ -28,7 +28,7 @@ function applyEvent(state, event) {
       totalGainValue: String(event.total_gain || "0"),
       dayGainValue: String(event.day_gain || "0"),
       updatedAt: Number(event.updated_at || 0),
-      positions: event.positions || []
+      positions: normalizePositions(event.positions)
     }
   }
   if (event.type === "error") {
@@ -51,6 +51,27 @@ function sumInReportCurrency(state, key) {
 
 function totalGain(state) { return Number(state.totalGainValue || 0) }
 function dayGain(state) { return Number(state.dayGainValue || 0) }
+
+function normalizePositions(values) {
+  var source = values && typeof values.length === "number" ? values : []
+  var result = []
+  for (var i = 0; i < source.length; i++) {
+    var row = source[i] || {}
+    result.push({
+      symbol: String(row.symbol || ""),
+      name: String(row.name || ""),
+      currency: String(row.currency || ""),
+      quantity: String(row.quantity || "0"),
+      available_quantity: String(row.available_quantity || "0"),
+      cost_price: String(row.cost_price || "0"),
+      last: String(row.last || "0"),
+      market_value: String(row.market_value || "0"),
+      total_gain: String(row.total_gain || "0"),
+      day_gain: String(row.day_gain || "0")
+    })
+  }
+  return result
+}
 
 function copy(value) {
   var result = {}

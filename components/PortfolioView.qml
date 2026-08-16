@@ -5,6 +5,7 @@ import qs.Ui
 
 Column {
   id: root
+
   required property var portfolio
   required property color textColor
   required property color accentColor
@@ -12,6 +13,8 @@ Column {
   required property string panelFontFamily
   property bool loading: false
   property string bridgeMessage: ""
+  property int selectedIndex: 0
+  property bool detailOpen: false
   signal refreshRequested()
 
   readonly property color dimColor: Qt.rgba(textColor.r, textColor.g, textColor.b, 0.58)
@@ -20,8 +23,11 @@ Column {
   readonly property color gainColor: "#63d297"
   readonly property color lossColor: "#ff6b7a"
   readonly property color trendColor: dayGain < 0 ? lossColor : gainColor
+  readonly property var selectedHolding: (portfolio.positions || []).length > 0
+    ? portfolio.positions[Math.max(0, Math.min(selectedIndex, portfolio.positions.length - 1))] : null
+
   width: parent ? parent.width : 0
-  spacing: Style.space(12)
+  spacing: Style.space(8)
 
   function alpha(color, opacity) { return Qt.rgba(color.r, color.g, color.b, opacity) }
   function money(value, currency, compact) {
@@ -33,7 +39,7 @@ Column {
   }
   function signedMoney(value, currency, compact) {
     var amount = Number(value || 0)
-    return (amount < 0 ? "−" : "+") + money(amount, currency, compact)
+    return (amount > 0 ? "+" : amount < 0 ? "−" : "") + money(amount, currency, compact)
   }
   function relativeTime(timestamp) {
     if (!timestamp) return "waiting"
@@ -45,42 +51,74 @@ Column {
 
   Row {
     width: parent.width
-    spacing: Style.space(10)
-    Rectangle {
-      width: Style.space(34); height: width; radius: width / 2
-      color: root.alpha(root.textColor, 0.07)
-      LongbridgeLogo { anchors.centerIn: parent; width: Style.space(18); height: width; foregroundColor: root.textColor; brandColors: true }
-    }
+    spacing: Style.space(8)
     Column {
-      width: parent.parent.width - Style.space(44)
-      Text { text: "All accounts"; color: root.textColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.body; font.bold: true }
-      Text { text: "Updated " + root.relativeTime(root.portfolio.updatedAt) + " · all values in " + root.portfolio.currency; color: root.dimColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.caption }
+      width: Math.max(0, root.width - refreshButton.width - Style.space(8))
+      spacing: 0
+      Text {
+        text: "All accounts"
+        color: root.textColor
+        font.family: root.panelFontFamily
+        font.pixelSize: Style.font.body
+        font.bold: true
+      }
+      Text {
+        text: "Updated " + root.relativeTime(root.portfolio.updatedAt) + " · " + root.portfolio.currency
+        color: root.dimColor
+        font.family: root.panelFontFamily
+        font.pixelSize: Style.font.caption
+      }
     }
-  }
-
-  Text {
-    text: root.money(root.portfolio.netAssets, root.portfolio.currency, false)
-    color: root.textColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.display; font.bold: true
-  }
-  Text {
-    text: root.signedMoney(root.dayGain, root.portfolio.currency, false) + " today"
-    color: root.trendColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.bodySmall; font.bold: true
+    Button {
+      id: refreshButton
+      text: "Refresh"
+      foreground: root.textColor
+      bordered: true
+      enabled: !root.loading
+      onClicked: root.refreshRequested()
+    }
   }
 
   Row {
-    width: parent.width; spacing: Style.space(8)
+    width: parent.width
+    spacing: Style.space(12)
+    Text {
+      text: root.money(root.portfolio.netAssets, root.portfolio.currency, false)
+      color: root.textColor
+      font.family: root.panelFontFamily
+      font.pixelSize: Style.font.title
+      font.bold: true
+    }
+    Text {
+      anchors.baseline: parent.children[0].baseline
+      text: root.signedMoney(root.dayGain, root.portfolio.currency, false) + " today"
+      color: root.trendColor
+      font.family: root.panelFontFamily
+      font.pixelSize: Style.font.bodySmall
+      font.bold: true
+    }
+  }
+
+  Row {
+    width: parent.width
+    spacing: Style.space(6)
     Repeater {
       model: [
-        { label: "CASH · " + root.portfolio.currency, value: root.money(root.portfolio.totalCash, root.portfolio.currency, true) },
-        { label: "MARKET VALUE", value: root.money(root.portfolio.marketValue, root.portfolio.currency, true) },
+        { label: "CASH", value: root.money(root.portfolio.totalCash, root.portfolio.currency, true) },
+        { label: "MARKET", value: root.money(root.portfolio.marketValue, root.portfolio.currency, true) },
         { label: "POSITIONS", value: String((root.portfolio.positions || []).length) }
       ]
       Rectangle {
         required property var modelData
-        width: (parent.width - parent.spacing * 2) / 3; implicitHeight: Style.space(62)
-        radius: Style.cornerRadius; color: root.alpha(root.textColor, 0.04); border.width: 1; border.color: root.alpha(root.textColor, 0.12)
+        width: (root.width - Style.space(12)) / 3
+        implicitHeight: Style.space(46)
+        radius: Style.cornerRadius
+        color: root.alpha(root.textColor, 0.04)
+        border.width: 1
+        border.color: root.alpha(root.textColor, 0.12)
         Column {
-          anchors.centerIn: parent; spacing: Style.space(3)
+          anchors.centerIn: parent
+          spacing: 0
           Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.label; color: root.dimColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.caption; font.bold: true }
           Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.value; color: root.textColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.bodySmall; font.bold: true }
         }
@@ -88,32 +126,101 @@ Column {
     }
   }
 
-  Rectangle { width: parent.width; height: 1; color: root.alpha(root.textColor, 0.10) }
-  Text { text: "POSITIONS · LIVE MARKET VALUE"; color: root.dimColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+  Rectangle {
+    visible: !root.detailOpen
+    width: parent.width
+    height: Math.min(Style.space(308), Math.max(Style.space(88), holdingsList.contentHeight))
+    radius: Style.cornerRadius
+    color: root.alpha(root.textColor, 0.025)
+    border.width: 1
+    border.color: root.alpha(root.textColor, 0.10)
+    clip: true
 
-  Column {
-    width: parent.width; spacing: Style.space(8)
-    Repeater {
+    ListView {
+      id: holdingsList
+      anchors.fill: parent
+      anchors.margins: 1
       model: root.portfolio.positions || []
-      Rectangle {
+      currentIndex: root.selectedIndex
+      boundsBehavior: Flickable.StopAtBounds
+      clip: true
+      ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+      delegate: HoldingRow {
         required property var modelData
-        readonly property real gain: Number(modelData.day_gain || 0)
-        readonly property color rowColor: gain < 0 ? root.lossColor : root.gainColor
-        width: parent.width; implicitHeight: Style.space(70); radius: Style.cornerRadius
-        color: root.alpha(root.textColor, 0.025); border.width: 1; border.color: root.alpha(root.textColor, 0.12)
-        Text { id: symbolLabel; anchors.left: parent.left; anchors.top: parent.top; anchors.margins: Style.space(10); text: modelData.symbol; color: root.textColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.bodySmall; font.bold: true }
-        Text { anchors.left: symbolLabel.right; anchors.right: valueLabel.left; anchors.verticalCenter: symbolLabel.verticalCenter; anchors.leftMargin: Style.space(8); anchors.rightMargin: Style.space(8); text: modelData.name || ""; color: root.dimColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.caption; elide: Text.ElideRight }
-        Text { id: valueLabel; anchors.right: parent.right; anchors.top: parent.top; anchors.margins: Style.space(10); text: root.money(modelData.market_value, modelData.currency, true); color: root.textColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.bodySmall; font.bold: true }
-        Text { anchors.left: parent.left; anchors.bottom: parent.bottom; anchors.margins: Style.space(10); text: modelData.quantity + " shares · avg " + root.money(modelData.cost_price, modelData.currency, false); color: root.dimColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.caption }
-        Text { anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: Style.space(10); text: "Today " + root.signedMoney(modelData.day_gain, modelData.currency, true); color: rowColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+        required property int index
+        holding: modelData
+        textColor: root.textColor
+        panelFontFamily: root.panelFontFamily
+        selected: index === root.selectedIndex
+        onActivated: {
+          root.selectedIndex = index
+          root.detailOpen = true
+        }
+      }
+
+      Text {
+        visible: !root.loading && (root.portfolio.positions || []).length === 0
+        anchors.centerIn: parent
+        text: root.portfolio.error || "No stock positions in this account."
+        color: root.dimColor
+        font.family: root.panelFontFamily
+        font.pixelSize: Style.font.bodySmall
       }
     }
-    Text { visible: !root.loading && (root.portfolio.positions || []).length === 0; width: parent.width; text: root.portfolio.error || "No stock positions in this account."; color: root.dimColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.bodySmall; horizontalAlignment: Text.AlignHCenter; padding: Style.space(14) }
   }
 
-  Row {
+  Rectangle {
+    visible: root.detailOpen && root.selectedHolding !== null
     width: parent.width
-    Text { width: parent.width - refreshButton.width; text: root.bridgeMessage || (root.totalGain === 0 ? "Live Longbridge account data" : "Total P/L in report currency " + root.signedMoney(root.totalGain, root.portfolio.currency, true)); color: root.dimColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.caption; elide: Text.ElideRight }
-    Button { id: refreshButton; text: root.loading ? "Loading…" : "Refresh"; enabled: !root.loading; foreground: root.textColor; fontFamily: root.panelFontFamily; onClicked: root.refreshRequested() }
+    implicitHeight: detailColumn.implicitHeight + Style.space(24)
+    radius: Style.cornerRadius
+    color: root.alpha(root.textColor, 0.04)
+    border.width: 1
+    border.color: root.alpha(root.textColor, 0.12)
+    Column {
+      id: detailColumn
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.margins: Style.space(12)
+      spacing: Style.space(7)
+      Row {
+        width: parent.width
+        Text { width: parent.width - backButton.width; text: String(root.selectedHolding && root.selectedHolding.symbol || ""); color: root.textColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.body; font.bold: true }
+        Button { id: backButton; text: "Back"; foreground: root.textColor; bordered: true; onClicked: root.detailOpen = false }
+      }
+      Grid {
+        columns: 2
+        columnSpacing: Style.space(18)
+        rowSpacing: Style.space(4)
+        Repeater {
+          model: root.selectedHolding ? [
+            { label: "QUANTITY", value: root.selectedHolding.quantity },
+            { label: "AVAILABLE", value: root.selectedHolding.available_quantity },
+            { label: "MARKET PRICE", value: root.money(root.selectedHolding.last, root.selectedHolding.currency, false) },
+            { label: "AVERAGE COST", value: root.money(root.selectedHolding.cost_price, root.selectedHolding.currency, false) },
+            { label: "TOTAL P/L", value: root.signedMoney(root.selectedHolding.total_gain, root.selectedHolding.currency, false) },
+            { label: "CURRENCY", value: root.selectedHolding.currency }
+          ] : []
+          Column {
+            required property var modelData
+            width: (root.width - Style.space(18)) / 2
+            spacing: 0
+            Text { text: modelData.label; color: root.dimColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.caption }
+            Text { text: modelData.value; color: root.textColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.bodySmall; font.bold: true }
+          }
+        }
+      }
+    }
+  }
+
+  Text {
+    visible: root.bridgeMessage !== ""
+    width: parent.width
+    text: root.bridgeMessage
+    color: root.dimColor
+    font.family: root.panelFontFamily
+    font.pixelSize: Style.font.caption
+    elide: Text.ElideRight
   }
 }

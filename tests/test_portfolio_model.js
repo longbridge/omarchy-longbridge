@@ -29,6 +29,43 @@ assert.strictEqual(state.positions.length, 1)
 assert.strictEqual(context.totalGain(state), 37600)
 assert.strictEqual(context.dayGain(state), 1080)
 
+const manyPositions = Array.from({ length: 12 }, (_, index) => ({
+  symbol: `TEST${index}.US`,
+  name: `Holding ${index}`,
+  currency: "USD",
+  quantity: String(index + 1),
+  available_quantity: String(index),
+  cost_price: "10.25",
+  last: "12.50",
+  market_value: String((index + 1) * 12.5),
+  total_gain: "2.25",
+  day_gain: index % 2 === 0 ? "0.50" : "-0.25"
+}))
+manyPositions[4].quantity = 5
+manyPositions[4].market_value = 62.5
+const denseState = context.applyEvent(context.initialState(), {
+  type: "portfolio",
+  currency: "USD",
+  positions: manyPositions
+})
+manyPositions[4].name = "Mutated after apply"
+assert.strictEqual(denseState.positions.length, 12)
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(denseState.positions[4])),
+  {
+    symbol: "TEST4.US",
+    name: "Holding 4",
+    currency: "USD",
+    quantity: "5",
+    available_quantity: "4",
+    cost_price: "10.25",
+    last: "12.50",
+    market_value: "62.5",
+    total_gain: "2.25",
+    day_gain: "0.50"
+  }
+)
+
 state = context.applyEvent(state, { type: "error", code: "portfolio_failed", message: "Could not load." })
 assert.strictEqual(state.error, "Could not load.")
 
