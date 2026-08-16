@@ -7,15 +7,6 @@ const context = {}
 vm.createContext(context)
 vm.runInContext(source, context)
 
-const quoteText = fs.readFileSync("tests/fixtures/quote.json", "utf8")
-const quoteResult = context.parseQuotes(quoteText)
-assert.strictEqual(quoteResult.ok, true)
-assert.strictEqual(quoteResult.event.type, "snapshot")
-assert.strictEqual(quoteResult.event.quotes[0].symbol, "AAPL.US")
-assert.strictEqual(quoteResult.event.quotes[0].last, "233.01")
-assert.strictEqual(quoteResult.event.quotes[0].trade_session, "Post")
-assert.strictEqual(quoteResult.event.quotes[0].prev_close, "230.00")
-
 const portfolioText = fs.readFileSync("tests/fixtures/portfolio.json", "utf8")
 const portfolioResult = context.parsePortfolio(portfolioText)
 assert.strictEqual(portfolioResult.ok, true)
@@ -25,14 +16,12 @@ assert.strictEqual(portfolioResult.event.market_value, "212518.05")
 assert.strictEqual(portfolioResult.event.total_gain, "37600.00")
 assert.strictEqual(portfolioResult.event.positions[0].day_gain, "21.80")
 
-assert.strictEqual(context.parseQuotes("{}").ok, false)
 assert.strictEqual(context.parsePortfolio("[]").ok, false)
-assert.deepStrictEqual(Array.from(context.quoteCommand(["AAPL.US", "700.HK"])), [
-  "longbridge", "quote", "AAPL.US", "700.HK", "--format", "json"
-])
 assert.deepStrictEqual(Array.from(context.portfolioCommand()), [
   "longbridge", "portfolio", "--format", "json"
 ])
+assert.strictEqual(context.quoteCommand, undefined)
+assert.strictEqual(context.parseQuotes, undefined)
 assert.strictEqual(context.classifyFailure("Please run longbridge auth login", 1).code, "not_authenticated")
 assert.strictEqual(context.classifyFailure("request failed with access_token=secret", 1).message, "Longbridge could not load data.")
 

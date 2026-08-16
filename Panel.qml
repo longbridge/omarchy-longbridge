@@ -29,6 +29,10 @@ Panel {
   property string feedback: ""
   property int activeTab: 0
   property var portfolioState: PortfolioModel.initialState()
+  // This plugin uses no bar-side status or open-panel decorations.
+  // A positive sub-pixel hint rounds to zero in the bar's indicator sizing.
+  readonly property real openPanelIndicatorWidth: 0.01
+  readonly property real openPanelIndicatorHeight: 0.01
 
   function persistWatchlist(symbols) {
     var entry = { id: root.moduleName, watchlist: Model.normalizedSymbols(symbols) }
@@ -86,12 +90,17 @@ Panel {
     marketState = Model.initialState(watchlist)
   }
 
-  LongbridgeCli {
-    id: cli
-    watchlist: root.watchlist
+  QuoteService {
+    id: quoteService
+    symbols: root.watchlist
     panelOpen: root.opened
-    portfolioActive: root.activeTab === 1
     onQuoteEvent: function(event) { root.marketState = Model.applyEvent(root.marketState, event) }
+  }
+
+  PortfolioService {
+    id: portfolioService
+    panelOpen: root.opened
+    active: root.activeTab === 1
     onPortfolioEvent: function(event) { root.portfolioState = PortfolioModel.applyEvent(root.portfolioState, event) }
   }
 
@@ -107,10 +116,10 @@ Panel {
     function open(): void { root.open() }
     function close(): void { root.close() }
     function toggle(): void { root.toggle() }
-    function reconnect(): string { cli.refreshQuotes(); return "ok" }
+    function reconnect(): string { quoteService.refresh(); return "ok" }
     function status(): string {
       return JSON.stringify({
-        connection: cli.quoteState,
+        connection: quoteService.quoteState,
         symbols: root.watchlist,
         subscribed: root.marketState.subscribed,
         selected: root.selectedQuote ? root.selectedQuote.symbol : ""
@@ -127,26 +136,22 @@ Panel {
     bar: root.bar
     text: ""
     iconComponent: Component {
-      LongbridgeLogo {
-        foregroundColor: root.foreground
-        brandColors: false
+      Item {
+        LongbridgeLogo {
+          anchors.centerIn: parent
+          width: Style.space(11)
+          height: width
+          foregroundColor: root.foreground
+          brandColors: false
+        }
       }
     }
-    tooltipText: cli.quoteState === "live" ? "Longbridge · Updated" : "Longbridge · " + cli.quoteState
-    active: cli.quoteState === "error" || cli.quoteState === "not_authenticated"
+    tooltipText: "Longbridge · " + quoteService.quoteState
+    active: quoteService.quoteState === "error"
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.LeftButton) root.toggle()
     }
 
-    Rectangle {
-      anchors.right: parent.right
-      anchors.bottom: parent.bottom
-      anchors.margins: Style.space(3)
-      width: Style.space(5)
-      height: width
-      radius: width / 2
-      color: cli.quoteState === "live" ? Color.accent : (button.active ? root.urgent : root.foreground)
-    }
   }
 
   KeyboardPanel {
@@ -175,7 +180,7 @@ Panel {
       onTextKey: function(text) {
         var key = String(text || "").toLowerCase()
         if (key === "a") addField.forceActiveFocus()
-        else if (key === "r") cli.refreshQuotes()
+        else if (key === "r") quoteService.refresh()
         else if (key === "m") root.activeTab = 0
         else if (key === "p") root.activeTab = 1
       }
@@ -216,7 +221,7 @@ Panel {
               }
               Text {
                 width: parent.width
-                text: root.watchlist.length + " symbols · " + cli.quoteState
+                text: root.watchlist.length + " symbols · " + quoteService.quoteState
                 color: Qt.darker(root.foreground, 1.5)
                 font.family: root.fontFamily
                 font.pixelSize: Style.font.caption
@@ -246,13 +251,13 @@ Panel {
 
           ConnectionBanner {
             visible: root.activeTab === 0
-            connectionState: cli.quoteState
-            detail: cli.quoteMessage
+            connectionState: quoteService.quoteState
+            detail: quoteService.message
             textColor: root.foreground
             warningColor: root.urgent
             panelFontFamily: root.fontFamily
             onActionRequested: {
-              cli.refreshQuotes()
+              quoteService.refresh()
             }
           }
 
@@ -340,13 +345,13 @@ Panel {
           PortfolioView {
             visible: root.activeTab === 1
             portfolio: root.portfolioState
-            loading: cli.portfolioLoading
-            bridgeMessage: cli.portfolioMessage
+            loading: portfolioService.loading
+            bridgeMessage: portfolioService.message
             textColor: root.foreground
             accentColor: Color.accent
             warningColor: root.urgent
             panelFontFamily: root.fontFamily
-            onRefreshRequested: cli.refreshPortfolio()
+            onRefreshRequested: portfolioService.refresh()
           }
 
           Text {
