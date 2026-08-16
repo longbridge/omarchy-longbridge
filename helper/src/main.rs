@@ -16,8 +16,12 @@ enum Command {
         #[command(subcommand)]
         command: AuthCommand,
     },
-    Stream { symbols: Vec<String> },
-    Search { query: String },
+    Stream {
+        symbols: Vec<String>,
+    },
+    Search {
+        query: String,
+    },
 }
 
 #[derive(Debug, Subcommand)]
