@@ -36,6 +36,39 @@ test("snapshot and quote events reconcile without mutating previous state", () =
   assert.notEqual(pushed.quotes, snap.quotes)
 })
 
+test("partial snapshots preserve failed-symbol values and attach row errors", () => {
+  let state = Model.initialState(["AAPL.US", "700.HK"])
+  state = Model.applyEvent(state, {
+    type: "snapshot",
+    quotes: [
+      { symbol: "AAPL.US", last: "230.00", prev_close: "225.00", timestamp: 100 },
+      { symbol: "700.HK", last: "610.00", prev_close: "600.00", timestamp: 100 }
+    ],
+    errors: []
+  })
+  const partial = Model.applyEvent(state, {
+    type: "snapshot",
+    quotes: [{ symbol: "AAPL.US", last: "232.18", timestamp: 110 }],
+    errors: [{ symbol: "700.HK", code: "network_error", message: "Quote unavailable." }]
+  })
+
+  assert.equal(partial.quotes["700.HK"].last, "610.00")
+  assert.equal(Model.rows(partial)[0].ready, true)
+  assert.equal(Model.rows(partial)[1].ready, true)
+  assert.equal(Model.rows(partial)[1].errorMessage, "Quote unavailable.")
+  assert.equal(Model.rows(state)[1].errorMessage, "")
+})
+
+test("flat rows preserve configured watchlist order", () => {
+  let state = Model.initialState(["D05.SG", "AAPL.US", "700.HK"])
+  state = Model.applyEvent(state, {
+    type: "snapshot",
+    quotes: [{ symbol: "AAPL.US", last: "1", prev_close: "1", timestamp: 100 }],
+    errors: []
+  })
+  assert.deepEqual(Model.rows(state).map(row => row.symbol), ["D05.SG", "AAPL.US", "700.HK"])
+})
+
 test("rows are grouped in US, HK, CN, SG order", () => {
   let state = Model.initialState(["D05.SG", "000001.SZ", "700.HK", "AAPL.US"])
   state = Model.applyEvent(state, {

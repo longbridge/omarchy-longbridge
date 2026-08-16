@@ -29,6 +29,7 @@ function initialState(symbols) {
   return {
     symbols: normalizedSymbols(symbols),
     quotes: {},
+    quoteErrors: {},
     subscribed: [],
     connection: "idle",
     auth: "unknown",
@@ -58,6 +59,7 @@ function applyEvent(state, event) {
   next.symbols = (state.symbols || []).slice()
   next.subscribed = (state.subscribed || []).slice()
   next.quotes = copyObject(state.quotes || {})
+  next.quoteErrors = copyObject(state.quoteErrors || {})
   next.error = state.error || null
   var type = String(event && event.type || "")
 
@@ -67,8 +69,15 @@ function applyEvent(state, event) {
     var quotes = listLike(event.quotes) ? event.quotes : []
     for (var i = 0; i < quotes.length; i++) {
       var snapshotSymbol = normalizedSymbol(quotes[i] && quotes[i].symbol)
-      if (symbolIsValid(snapshotSymbol))
+      if (symbolIsValid(snapshotSymbol)) {
         next.quotes[snapshotSymbol] = mergedQuote(next.quotes[snapshotSymbol], quotes[i])
+        delete next.quoteErrors[snapshotSymbol]
+      }
+    }
+    var errors = listLike(event.errors) ? event.errors : []
+    for (var j = 0; j < errors.length; j++) {
+      var errorSymbol = normalizedSymbol(errors[j] && errors[j].symbol)
+      if (symbolIsValid(errorSymbol)) next.quoteErrors[errorSymbol] = String(errors[j].message || "Quote unavailable.")
     }
   } else if (type === "quote") {
     var symbol = normalizedSymbol(event.symbol)
@@ -96,9 +105,13 @@ function rows(state) {
   var result = []
   var symbols = normalizedSymbols(state && state.symbols)
   var quotes = state && state.quotes ? state.quotes : {}
+  var errors = state && state.quoteErrors ? state.quoteErrors : {}
   for (var i = 0; i < symbols.length; i++) {
     var symbol = symbols[i]
-    result.push(quotes[symbol] || { symbol: symbol, ready: false })
+    var row = mergedQuote({}, quotes[symbol] || { symbol: symbol })
+    row.ready = !!quotes[symbol]
+    row.errorMessage = String(errors[symbol] || "")
+    result.push(row)
   }
   return result
 }
@@ -162,4 +175,3 @@ if (typeof module !== "undefined") module.exports = {
   formatPercent: formatPercent,
   isStale: isStale
 }
-

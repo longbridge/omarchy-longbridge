@@ -6,6 +6,8 @@ QML_FILES := Panel.qml QuoteService.qml PortfolioService.qml \
 	components/MarketGroup.qml \
 	components/LongbridgeLogo.qml \
 	components/PortfolioView.qml \
+	components/WatchlistRow.qml \
+	components/WatchlistView.qml \
 	components/QuoteTile.qml \
 	components/SymbolDetail.qml
 
