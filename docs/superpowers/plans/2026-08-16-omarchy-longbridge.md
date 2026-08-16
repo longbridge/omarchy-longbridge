@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- The plugin ID is `longbridge.market-pulse` and the only plugin kind is `bar-widget`.
+- The plugin name is `Longbridge`, its ID is `longbridge.omarchy`, and the only plugin kind is `bar-widget`.
 - The first release is read-only: no account, position, order, or trade operations.
 - Production OAuth files are exactly `~/.longbridge/openapi/cli-registration` and `~/.longbridge/openapi/cli-auth`.
 - Authentication and secure-storage production code is extracted from `../longbridge-terminal`; do not independently reproduce the file format.
@@ -368,7 +368,7 @@ Expected: `omarchy plugin validate .` fails because `manifest.json` is absent.
 
 - [ ] **Step 3: Add manifest and user documentation**
 
-Declare `longbridge.market-pulse`, version `0.1.0`, `bar-widget`, on-demand activation, right-section placement, default symbols `AAPL.US`, `700.HK`, and `D05.SG`, and settings for watchlist and positive-color convention. Document install/update/remove, shared login paths and behavior, helper download/checksum, keyboard controls, market-data entitlement, privacy, non-affiliation, and read-only limitation.
+Declare `longbridge.omarchy` with display name `Longbridge`, version `0.1.0`, `bar-widget`, on-demand activation, right-section placement, default symbols `AAPL.US`, `700.HK`, and `D05.SG`, and settings for watchlist and positive-color convention. Document install/update/remove, shared login paths and behavior, helper download/checksum, keyboard controls, market-data entitlement, privacy, non-affiliation, and read-only limitation.
 
 - [ ] **Step 4: Run full acceptance**
 

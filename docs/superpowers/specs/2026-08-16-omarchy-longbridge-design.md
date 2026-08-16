@@ -154,7 +154,7 @@ Authenticated users add instruments through a compact search command backed by L
 
 ## Manifest and packaging
 
-The root `manifest.json` uses the current Omarchy schema, declares a single `bar-widget` entry point, and uses `longbridge.market-pulse` as its stable plugin ID. The `longbridge` namespace follows the repository's `longbridge/omarchy-longbridge` GitHub publisher identity.
+The root `manifest.json` uses the current Omarchy schema, declares a single `bar-widget` entry point, uses `Longbridge` as its display name, and uses `longbridge.omarchy` as its stable plugin ID. The `longbridge` namespace follows the repository's `longbridge/omarchy-longbridge` GitHub publisher identity.
 
 The repository is installable with `omarchy plugin add <git-url> --enable` and validates with `omarchy plugin validate`. The helper launcher resolves relative to the plugin directory. Packaging must not assume the sibling `longbridge-terminal` checkout exists on user machines.
 
