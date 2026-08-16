@@ -19,6 +19,10 @@ grep -F 'panelOpen: root.opened && setup.ready' Panel.qml >/dev/null
 grep -F 'active: root.activeTab === 1' Panel.qml >/dev/null
 grep -F 'WatchlistView {' Panel.qml >/dev/null
 grep -F 'PortfolioView {' Panel.qml >/dev/null
+grep -F 'WatchlistService {' Panel.qml >/dev/null
+! grep -F 'QuoteService {' Panel.qml
+grep -F 'id: panelHeader' Panel.qml >/dev/null
+grep -F 'implicitHeight: Style.space(28)' Panel.qml >/dev/null
 grep -F 'anchors.verticalCenter: parent.verticalCenter' Panel.qml >/dev/null
 ! grep -F 'public quotes' Panel.qml
 ! grep -F 'Longbridge account portfolio' Panel.qml
@@ -29,6 +33,15 @@ grep -F 'implicitHeight: Style.space(44)' components/WatchlistRow.qml >/dev/null
 grep -F 'implicitHeight: Style.space(44)' components/HoldingRow.qml >/dev/null
 grep -F 'spacing: Style.space(4)' components/HoldingRow.qml >/dev/null
 grep -F 'ListView {' components/WatchlistView.qml >/dev/null
+grep -F 'Dropdown {' components/WatchlistView.qml >/dev/null
+grep -F 'groups: watchlistService.groups' Panel.qml >/dev/null
+grep -F 'activeGroupId: watchlistService.activeGroupId' Panel.qml >/dev/null
+! grep -F 'addRequested' components/WatchlistView.qml
+! grep -F 'removeRequested' components/WatchlistView.qml
+! grep -F 'text: "Add"' components/WatchlistView.qml
+! grep -F 'text: "Remove"' components/SymbolDetail.qml
+! grep -F 'key === "a"' Panel.qml
+! grep -F 'onDeleteRequested' Panel.qml
 grep -F 'ListView {' components/PortfolioView.qml >/dev/null
 ! grep -F 'LongbridgeLogo' components/PortfolioView.qml
 grep -F 'PanelActionButton {' components/PortfolioView.qml >/dev/null

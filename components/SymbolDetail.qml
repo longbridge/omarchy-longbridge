@@ -10,7 +10,6 @@ Column {
   property color textColor: Color.foreground
   property string panelFontFamily: Style.font.family
   signal backRequested()
-  signal removeRequested()
 
   width: parent ? parent.width : implicitWidth
   spacing: Style.spacing.panelGap
@@ -28,16 +27,7 @@ Column {
       onClicked: root.backRequested()
     }
 
-    Item { width: Math.max(0, parent.width - parent.children[0].width - parent.children[2].width - parent.spacing * 2); height: 1 }
-
-    Button {
-      text: "Remove"
-      iconText: "×"
-      bordered: true
-      foreground: root.textColor
-      fontFamily: root.panelFontFamily
-      onClicked: root.removeRequested()
-    }
+    Item { width: Math.max(0, parent.width - parent.children[0].width - parent.spacing); height: 1 }
   }
 
   Text {
@@ -96,4 +86,3 @@ Column {
     }
   }
 }
-

@@ -6,6 +6,8 @@ import qs.Ui
 Column {
   id: root
 
+  required property var groups
+  required property string activeGroupId
   required property var rows
   required property color textColor
   required property string panelFontFamily
@@ -14,14 +16,18 @@ Column {
   property int selectedIndex: 0
   property bool detailOpen: false
   property double nowMs: Date.now()
-  signal addRequested(string symbol)
-  signal removeRequested(int index)
+  signal groupSelected(string groupId)
   signal refreshRequested()
 
   readonly property color dimColor: Qt.rgba(textColor.r, textColor.g, textColor.b, 0.58)
   readonly property var selectedQuote: rows.length > 0
     ? rows[Math.max(0, Math.min(selectedIndex, rows.length - 1))] : null
-  property bool addMode: false
+  readonly property var groupOptions: {
+    var result = []
+    for (var i = 0; i < groups.length; i++)
+      result.push({ value: String(groups[i].id), label: String(groups[i].name || "Unnamed") })
+    return result
+  }
 
   width: parent ? parent.width : 0
   spacing: Style.space(8)
@@ -30,55 +36,40 @@ Column {
     width: parent.width
     spacing: Style.space(7)
 
+    Dropdown {
+      id: groupDropdown
+      width: Style.space(170)
+      showLabel: false
+      value: root.activeGroupId
+      options: root.groupOptions
+      foreground: root.textColor
+      fontFamily: root.panelFontFamily
+      onChanged: function(value) {
+        root.selectedIndex = 0
+        root.detailOpen = false
+        root.groupSelected(value)
+      }
+    }
     Text {
-      width: Math.max(0, parent.width - addButton.width - refreshButton.width - parent.spacing * 2)
+      width: Math.max(0, parent.width - groupDropdown.width - refreshButton.width - parent.spacing * 2)
       anchors.verticalCenter: parent.verticalCenter
-      text: root.loading ? "Refreshing public quotes…" : (root.message || root.rows.length + " watched")
+      text: root.loading ? "Refreshing…" : (root.message || root.rows.length + " symbols")
       color: root.dimColor
       font.family: root.panelFontFamily
       font.pixelSize: Style.font.caption
       elide: Text.ElideRight
+      horizontalAlignment: Text.AlignRight
     }
-    Button {
-      id: addButton
-      text: root.addMode ? "Cancel" : "Add"
-      foreground: root.textColor
-      bordered: true
-      onClicked: root.addMode = !root.addMode
-    }
-    Button {
+    PanelActionButton {
       id: refreshButton
-      text: "Refresh"
+      iconText: "󰑐"
+      tooltipText: "Refresh"
       foreground: root.textColor
-      bordered: true
+      fontFamily: root.panelFontFamily
+      size: Style.space(28)
+      bordered: false
       enabled: !root.loading
       onClicked: root.refreshRequested()
-    }
-  }
-
-  Row {
-    visible: root.addMode
-    width: parent.width
-    spacing: Style.space(7)
-    TextField {
-      id: symbolField
-      width: parent.width - saveButton.width - parent.spacing
-      placeholderText: "AAPL.US or 700.HK"
-      foreground: root.textColor
-      maximumLength: 24
-      Keys.onReturnPressed: saveButton.clicked()
-    }
-    Button {
-      id: saveButton
-      text: "Add"
-      foreground: root.textColor
-      bordered: true
-      enabled: symbolField.text.trim() !== ""
-      onClicked: {
-        root.addRequested(symbolField.text)
-        symbolField.text = ""
-        root.addMode = false
-      }
     }
   }
 
@@ -119,7 +110,7 @@ Column {
       Text {
         visible: root.rows.length === 0
         anchors.centerIn: parent
-        text: "Add a symbol to begin."
+        text: root.loading ? "Loading Longbridge watchlist…" : "This group is empty."
         color: root.dimColor
         font.family: root.panelFontFamily
         font.pixelSize: Style.font.bodySmall
@@ -133,9 +124,5 @@ Column {
     textColor: root.textColor
     panelFontFamily: root.panelFontFamily
     onBackRequested: root.detailOpen = false
-    onRemoveRequested: {
-      root.removeRequested(root.selectedIndex)
-      root.detailOpen = false
-    }
   }
 }

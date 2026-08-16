@@ -16,51 +16,14 @@ Panel {
   readonly property color foreground: bar ? bar.foreground : Color.foreground
   readonly property color urgent: bar ? bar.urgent : Color.urgent
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
-  readonly property var watchlist: Model.normalizedSymbols(setting("watchlist", ["AAPL.US", "700.HK", "D05.SG"]))
   readonly property var quoteRows: Model.rows(marketState)
   readonly property real openPanelIndicatorWidth: 0.01
   readonly property real openPanelIndicatorHeight: 0.01
 
-  property var marketState: Model.initialState(watchlist)
+  property var marketState: Model.initialState([])
   property var portfolioState: PortfolioModel.initialState()
   property int activeTab: 0
   property double nowMs: Date.now()
-  property string feedback: ""
-
-  function persistWatchlist(symbols) {
-    var entry = { id: root.moduleName, watchlist: Model.normalizedSymbols(symbols) }
-    var current = root.settings || ({})
-    for (var key in current) if (key !== "id" && key !== "watchlist") entry[key] = current[key]
-    root.settings = entry
-    if (root.bar && root.bar.shell && typeof root.bar.shell.updateEntryInline === "function")
-      root.bar.shell.updateEntryInline(root.moduleName, entry)
-  }
-
-  function addSymbol(value) {
-    var symbol = Model.normalizedSymbol(value)
-    if (!Model.symbolIsValid(symbol)) {
-      feedback = "Use a symbol such as AAPL.US or 700.HK."
-      return
-    }
-    if (watchlist.indexOf(symbol) >= 0) {
-      feedback = symbol + " is already watched."
-      return
-    }
-    if (watchlist.length >= 20) {
-      feedback = "The watchlist supports up to 20 symbols."
-      return
-    }
-    persistWatchlist(watchlist.concat([symbol]))
-    feedback = symbol + " added."
-  }
-
-  function removeWatchlistIndex(index) {
-    if (index < 0 || index >= watchlist.length) return
-    var next = watchlist.slice()
-    next.splice(index, 1)
-    persistWatchlist(next)
-    watchlistView.selectedIndex = Math.max(0, Math.min(index, next.length - 1))
-  }
 
   function moveSelection(delta) {
     if (activeTab === 0) {
@@ -71,12 +34,16 @@ Panel {
     }
   }
 
-  onWatchlistChanged: marketState = Model.initialState(watchlist)
-
-  QuoteService {
-    id: quoteService
-    symbols: root.watchlist
+  WatchlistService {
+    id: watchlistService
     panelOpen: root.opened && setup.ready
+    active: root.activeTab === 0
+    onGroupsEvent: function(groups, defaultGroupId) {
+      root.marketState = Model.applyGroups(root.marketState, groups, defaultGroupId)
+    }
+    onGroupSelected: function(groupId) {
+      root.marketState = Model.selectGroup(root.marketState, groupId)
+    }
     onQuoteEvent: function(event) { root.marketState = Model.applyEvent(root.marketState, event) }
   }
 
@@ -100,7 +67,7 @@ Panel {
     function close(): void { root.close() }
     function toggle(): void { root.toggle() }
     function refresh(): string {
-      if (root.activeTab === 0) quoteService.refresh()
+      if (root.activeTab === 0) watchlistService.refresh()
       else portfolioService.refresh()
       return "ok"
     }
@@ -108,8 +75,8 @@ Panel {
       return JSON.stringify({
         setup: setup.setupState,
         tab: root.activeTab === 0 ? "watchlist" : "portfolio",
-        quotes: quoteService.quoteState,
-        symbols: root.watchlist
+        watchlist: watchlistService.watchlistState,
+        group: watchlistService.activeGroupId
       })
     }
   }
@@ -158,7 +125,6 @@ Panel {
         if (root.activeTab === 0 && root.quoteRows.length > 0) watchlistView.detailOpen = true
         else if (root.activeTab === 1 && root.portfolioState.positions.length > 0) portfolioView.detailOpen = true
       }
-      onDeleteRequested: if (setup.ready && root.activeTab === 0) root.removeWatchlistIndex(watchlistView.selectedIndex)
       onCloseRequested: {
         if (watchlistView.detailOpen) watchlistView.detailOpen = false
         else if (portfolioView.detailOpen) portfolioView.detailOpen = false
@@ -168,8 +134,7 @@ Panel {
       onTextKey: function(text) {
         if (!setup.ready) return
         var key = String(text || "").toLowerCase()
-        if (key === "a" && root.activeTab === 0) watchlistView.addMode = true
-        else if (key === "r" && root.activeTab === 0) quoteService.refresh()
+        if (key === "r" && root.activeTab === 0) watchlistService.refresh()
         else if (key === "r") portfolioService.refresh()
         else if (key === "w" || key === "m") root.activeTab = 0
         else if (key === "p") root.activeTab = 1
@@ -191,12 +156,15 @@ Panel {
           panelFontFamily: root.fontFamily
         }
 
-        Row {
+        Item {
+          id: panelHeader
           visible: setup.ready
           width: parent.width
-          spacing: Style.space(9)
+          implicitHeight: Style.space(28)
 
           LongbridgeLogo {
+            id: headerLogo
+            anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             width: Style.space(20)
             height: width
@@ -204,8 +172,11 @@ Panel {
             brandColors: true
           }
           Text {
+            anchors.left: headerLogo.right
+            anchors.leftMargin: Style.space(9)
+            anchors.right: panelMenu.left
+            anchors.rightMargin: Style.space(9)
             anchors.verticalCenter: parent.verticalCenter
-            width: Math.max(0, contentColumn.width - Style.space(20) - panelMenu.width - Style.space(18))
             text: "Longbridge"
             color: root.foreground
             font.family: root.fontFamily
@@ -215,6 +186,7 @@ Panel {
           }
           PanelMenu {
             id: panelMenu
+            anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             textColor: root.foreground
             panelFontFamily: root.fontFamily
@@ -268,15 +240,16 @@ Panel {
           id: watchlistView
           visible: setup.ready && root.activeTab === 0
           width: parent.width
+          groups: watchlistService.groups
+          activeGroupId: watchlistService.activeGroupId
           rows: root.quoteRows
-          loading: quoteService.loading
-          message: root.feedback || quoteService.message
+          loading: watchlistService.loading
+          message: watchlistService.message
           nowMs: root.nowMs
           textColor: root.foreground
           panelFontFamily: root.fontFamily
-          onAddRequested: function(symbol) { root.addSymbol(symbol) }
-          onRemoveRequested: function(index) { root.removeWatchlistIndex(index) }
-          onRefreshRequested: quoteService.refresh()
+          onGroupSelected: function(groupId) { watchlistService.selectGroup(groupId) }
+          onRefreshRequested: watchlistService.refresh()
         }
 
         PortfolioView {

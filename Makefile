@@ -1,6 +1,6 @@
 QMLLINT := /usr/lib/qt6/bin/qmllint
 QMLTESTRUNNER := /usr/lib/qt6/bin/qmltestrunner
-QML_FILES := Panel.qml QuoteService.qml PortfolioService.qml \
+QML_FILES := Panel.qml WatchlistService.qml PortfolioService.qml \
 	components/LongbridgeSetup.qml \
 	components/LongbridgeLogo.qml \
 	components/HoldingRow.qml \
