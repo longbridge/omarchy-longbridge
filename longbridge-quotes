@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+"""Fetch public watchlist quotes without invoking Longbridge Terminal."""
+
+from decimal import Decimal, InvalidOperation
+import json
+import re
+import sys
+import time
+from urllib.parse import quote as url_quote
+from urllib.request import Request, urlopen
+
+
+SYMBOL = re.compile(r"^[A-Z0-9][A-Z0-9-]{0,14}\.(US|HK|SG|SH|SZ)$")
+USER_AGENT = "omarchy-longbridge/1.0"
+
+
+def provider_symbol(symbol):
+    canonical = str(symbol or "").strip().upper()
+    match = SYMBOL.fullmatch(canonical)
+    if not match:
+        raise ValueError("unsupported symbol")
+    ticker, market = canonical.rsplit(".", 1)
+    if market == "US":
+        return ticker
+    if market == "HK":
+        if not ticker.isdigit() or len(ticker) > 4:
+            raise ValueError("unsupported Hong Kong symbol")
+        return ticker.zfill(4) + ".HK"
+    if market == "SG":
+        return ticker + ".SI"
+    if market == "SH":
+        return ticker + ".SS"
+    return ticker + ".SZ"
+
+
+def decimal_string(value, default="0"):
+    if value is None:
+        return default
+    try:
+        return str(Decimal(str(value)))
+    except (InvalidOperation, ValueError):
+        return default
+
+
+def parse_chart(symbol, payload):
+    chart = payload.get("chart") if isinstance(payload, dict) else None
+    results = chart.get("result") if isinstance(chart, dict) else None
+    if not isinstance(results, list) or not results:
+        raise ValueError("quote not found")
+    result = results[0]
+    meta = result.get("meta") if isinstance(result, dict) else None
+    indicators = result.get("indicators") if isinstance(result, dict) else None
+    quote_sets = indicators.get("quote") if isinstance(indicators, dict) else None
+    quote_data = quote_sets[0] if isinstance(quote_sets, list) and quote_sets else {}
+
+    def latest(name, fallback=None):
+        values = quote_data.get(name) if isinstance(quote_data, dict) else None
+        if isinstance(values, list):
+            for value in reversed(values):
+                if value is not None:
+                    return value
+        return fallback
+
+    meta = meta if isinstance(meta, dict) else {}
+    timestamps = result.get("timestamp") if isinstance(result.get("timestamp"), list) else []
+    timestamp = meta.get("regularMarketTime") or (timestamps[-1] if timestamps else int(time.time()))
+    last = meta.get("regularMarketPrice")
+    if last is None:
+        last = latest("close")
+    if last is None:
+        raise ValueError("quote not found")
+    return {
+        "symbol": symbol,
+        "name": str(meta.get("longName") or meta.get("shortName") or symbol),
+        "currency": str(meta.get("currency") or ""),
+        "last": decimal_string(last),
+        "prev_close": decimal_string(meta.get("chartPreviousClose") or meta.get("previousClose")),
+        "open": decimal_string(latest("open")),
+        "high": decimal_string(latest("high")),
+        "low": decimal_string(latest("low")),
+        "volume": decimal_string(latest("volume")),
+        "timestamp": int(timestamp),
+        "trade_status": str(meta.get("marketState") or "UNKNOWN"),
+        "trade_session": "Intraday",
+    }
+
+
+def fetch_quote(symbol, opener):
+    provider = provider_symbol(symbol)
+    endpoint = "https://query1.finance.yahoo.com/v8/finance/chart/" + url_quote(provider, safe="")
+    request = Request(
+        endpoint + "?interval=1d&range=5d&includePrePost=true",
+        headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
+    )
+    with opener(request, timeout=10) as response:
+        payload = json.loads(response.read())
+    return parse_chart(symbol, payload)
+
+
+def main(argv=None, opener=None, now_ms=None):
+    symbols = list(sys.argv[1:] if argv is None else argv)
+    opener = urlopen if opener is None else opener
+    now_ms = (lambda: int(time.time() * 1000)) if now_ms is None else now_ms
+    quotes = []
+    errors = []
+    for raw_symbol in symbols:
+        symbol = str(raw_symbol or "").strip().upper()
+        try:
+            quotes.append(fetch_quote(symbol, opener))
+        except ValueError:
+            errors.append({"symbol": symbol, "code": "not_found", "message": "Quote unavailable."})
+        except Exception:
+            errors.append({"symbol": symbol, "code": "network_error", "message": "Quote unavailable."})
+    state = "ready" if quotes and not errors else ("partial" if quotes else "error")
+    json.dump({
+        "state": state,
+        "fetched_at_ms": int(now_ms()),
+        "quotes": quotes,
+        "errors": errors,
+    }, sys.stdout, separators=(",", ":"))
+    sys.stdout.write("\n")
+    if errors:
+        print("Some quotes were unavailable.", file=sys.stderr)
+    return 0 if quotes else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

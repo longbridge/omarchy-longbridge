@@ -1,0 +1,26 @@
+{
+  "chart": {
+    "result": [{
+      "meta": {
+        "symbol": "AAPL",
+        "longName": "Apple Inc.",
+        "currency": "USD",
+        "regularMarketPrice": 232.18,
+        "chartPreviousClose": 230.00,
+        "regularMarketTime": 1786861000,
+        "marketState": "REGULAR"
+      },
+      "timestamp": [1786861000],
+      "indicators": {
+        "quote": [{
+          "open": [231.05],
+          "high": [233.20],
+          "low": [229.90],
+          "close": [232.18],
+          "volume": [1234567]
+        }]
+      }
+    }],
+    "error": null
+  }
+}

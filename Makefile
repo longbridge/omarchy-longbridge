@@ -8,9 +8,12 @@ QML_FILES := Panel.qml LongbridgeCli.qml \
 	components/QuoteTile.qml \
 	components/SymbolDetail.qml
 
-.PHONY: test test-js test-qml test-install qml-check validate
+.PHONY: test test-python test-js test-qml test-install qml-check validate
 
-test: test-js test-qml test-install
+test: test-python test-js test-qml test-install
+
+test-python:
+	python -m unittest -v tests.test_longbridge_quotes
 
 test-js:
 	node --test tests/test_cli_adapter.js tests/test_model.js tests/test_portfolio_model.js
