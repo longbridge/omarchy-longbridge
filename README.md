@@ -1,68 +1,98 @@
 # Longbridge for Omarchy
 
-Longbridge quotes and portfolio data in the Omarchy bar.
+A compact Omarchy watchlist and Longbridge portfolio panel.
 
-The plugin calls the installed [Longbridge Terminal](https://github.com/longbridge/longbridge-terminal) CLI and renders its JSON output with QML. There is no plugin-specific service, Rust helper, token store, or market-data implementation.
+The Watchlist uses a bundled Python standard-library helper to fetch public Yahoo Finance chart data. It never invokes the `longbridge` CLI for quotes. The Portfolio tab uses Longbridge Terminal for authenticated account data.
 
 ## Requirements
 
 - Omarchy
-- `longbridge` available on `PATH`
-- A Longbridge login created with `longbridge auth login`
+- Python 3
+- Internet access
 
-Longbridge Terminal owns authentication, regional routing, market-data access, exchange-rate conversion, and account calculations. OAuth tokens never pass through QML, plugin settings, process arguments, or IPC output.
+Longbridge Terminal and a verified login are mandatory before the normal panel opens. If the CLI is missing, the welcome page can install it from Longbridge's official installer and guide login. There is no skip action.
 
 ## Install
 
-Install Longbridge Terminal using the project installer. See the [CLI installation guide](https://open.longbridge.com/docs/cli/install) for other platforms.
+Add and enable the plugin:
+
+```bash
+omarchy plugin add https://github.com/longbridge/omarchy-longbridge.git --enable
+```
+
+Open Longbridge from the bar. The welcome page will:
+
+1. Check whether Longbridge Terminal is installed.
+2. Offer **Install Longbridge CLI** when it is missing.
+3. Offer **Log in to Longbridge** after installation.
+4. Verify the session with `longbridge check --format json`.
+
+The install action runs the official command only after you click it:
 
 ```bash
 curl -sSL https://github.com/longbridge/longbridge-terminal/raw/main/install | sh
 ```
 
-Authenticate, then add the plugin:
+See the [Longbridge CLI documentation](https://open.longbridge.com/docs/cli/) for manual installation and troubleshooting.
 
-```bash
-longbridge auth login
-omarchy plugin add https://github.com/longbridge/omarchy-longbridge.git --enable
-```
-
-The Longbridge pulse icon appears in the right section of the bar.
-
-For development, install this checkout through a symlink:
+For development, symlink this checkout into Omarchy:
 
 ```bash
 ./install.sh
 ```
 
-Use `./install.sh --no-restart` to leave the current shell process running. QML edits are read through the symlink.
+Use `./install.sh --no-restart` to leave the current shell running. This script validates and links the plugin; it never installs Longbridge Terminal automatically.
 
-## Markets
+## Watchlist
 
-Enter canonical Longbridge symbols such as:
+The compact Watchlist supports up to 20 canonical symbols:
 
 - `AAPL.US`
 - `700.HK`
+- `600519.SH`
 - `000001.SZ`
 - `D05.SG`
 
-The watchlist supports up to 20 symbols. While the panel is open, the plugin runs `longbridge quote ... --format json` every 15 seconds. Select a quote to inspect its session open, previous close, high, low, volume, and trade session.
+The helper maps those symbols to public provider symbols internally. Quotes refresh when the panel opens, after watchlist changes, on explicit refresh, and every five minutes while open. Partial failures retain the last available value and mark only affected rows.
+
+Each 44-unit row shows the symbol, name, price, currency, and percentage movement. Selecting a row opens OHLC, volume, session, timestamp, and removal details.
 
 ## Portfolio
 
-The Portfolio tab displays total assets, market value, cash, total P/L, intraday P/L, and current stock positions. It runs `longbridge portfolio --format json` when selected and refreshes every 60 seconds while open.
+Portfolio runs exactly:
 
-Longbridge Terminal calculates portfolio totals in USD and preserves each holding's native trading currency.
+```text
+longbridge portfolio --format json
+```
 
-Keyboard controls:
+It refreshes when selected, on explicit refresh, and every 60 seconds while visible. The summary stays compact while holdings use a bounded list with its own scrollbar. Each 44-unit row shows market value and today's movement; quantity, available quantity, market price, average cost, total P/L, and currency appear in selected-row detail.
 
-- `J` / `K` or arrow keys: move through quotes
-- `Enter`: open symbol detail
-- `A`: focus the symbol field
-- `X`: remove the selected symbol
-- `R`: refresh quotes
-- `M` / `P`: switch between Markets and Portfolio
-- `Esc`: return or close
+## Resource menu
+
+The top-right menu opens:
+
+- [Longbridge](https://longbridge.com)
+- [Longbridge CLI](https://open.longbridge.com/docs/cli/)
+- [GitHub](https://github.com/longbridge/omarchy-longbridge)
+
+It has no exit or destructive actions.
+
+## Keyboard controls
+
+- `J` / `K` or arrow keys: move selection
+- `Enter`: open selected detail
+- `A`: open the add-symbol control
+- `X`: remove the selected watchlist symbol
+- `R`: refresh the active tab
+- `W` / `M`: switch to Watchlist
+- `P`: switch to Portfolio
+- `Esc`: return from detail or close the panel
+
+## Privacy and data sources
+
+The plugin does not read or copy Longbridge OAuth files. Setup and Portfolio launch the installed CLI, which owns authentication and account access. Watchlist requests contain only public ticker symbols and go to Yahoo Finance's chart endpoint. No trading or order placement is implemented.
+
+Red and green are reserved for rise/fall text. Icons, surfaces, selection, and borders remain theme-neutral; only the official logo in the panel header uses brand colors.
 
 ## Development
 
@@ -72,7 +102,7 @@ Run all checks with:
 make validate
 ```
 
-The tests use fixed CLI JSON fixtures and do not contact Longbridge or read OAuth files.
+Automated tests use fixtures and fake executables. They do not contact Yahoo or Longbridge and do not read OAuth files.
 
 ## Update or remove
 
@@ -81,18 +111,17 @@ omarchy plugin update longbridge.omarchy
 omarchy plugin remove longbridge.omarchy
 ```
 
-Removing the plugin does not remove the Longbridge Terminal login.
+Removing the plugin does not remove Longbridge Terminal or its login.
 
 ## Limitations
 
-- This plugin is read-only and cannot place orders.
-- Quotes are polled every 15 seconds; the plugin does not maintain a WebSocket subscription.
-- Quote availability and entitlement depend on the Longbridge account and market-data package.
-- Historical portfolio charts are not generated.
-- An internet connection is required.
+- Read-only; no order placement.
+- Watchlist data is polled and may be delayed, interrupted, or unavailable.
+- Public-provider symbol coverage can differ from Longbridge market coverage.
+- No historical portfolio chart.
 
-Longbridge for Omarchy is not investment advice. Market data may be delayed, interrupted, or unavailable.
+Longbridge for Omarchy is not investment advice.
 
 ## License
 
-Apache-2.0. Longbridge Terminal is a runtime prerequisite and is distributed separately.
+Apache-2.0. Longbridge Terminal is distributed separately.

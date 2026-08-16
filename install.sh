@@ -29,10 +29,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-command -v longbridge >/dev/null 2>&1 || {
-  printf '%s\n' 'longbridge is required. Install Longbridge Terminal:' >&2
-  printf '%s\n' 'curl -sSL https://github.com/longbridge/longbridge-terminal/raw/main/install | sh' >&2
-  printf '%s\n' 'https://open.longbridge.com/docs/cli/install' >&2
+command -v python3 >/dev/null 2>&1 || {
+  printf '%s\n' 'python3 is required for public watchlist quotes.' >&2
   exit 1
 }
 command -v omarchy >/dev/null 2>&1 || {
@@ -65,4 +63,9 @@ if $restart_shell; then
 fi
 
 printf 'Longbridge installed for development at %s\n' "$install_path"
-printf '%s\n' 'QML edits are read through the symlink; run longbridge auth login if needed.'
+if command -v longbridge >/dev/null 2>&1; then
+  printf '%s\n' 'Open the panel to verify your Longbridge login.'
+else
+  printf '%s\n' 'Open the panel welcome page to install Longbridge CLI and log in.'
+fi
+printf '%s\n' 'QML edits are read through the symlink.'

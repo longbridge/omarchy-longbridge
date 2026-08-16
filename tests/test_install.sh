@@ -16,25 +16,22 @@ make_fake() {
 
 make_fake cargo 'exit 91'
 make_fake omarchy 'printf "%s\n" "$*" >>"$INSTALL_TEST_LOG"'
+make_fake curl 'printf "%s\n" "curl unexpectedly executed" >>"$INSTALL_TEST_LOG"; exit 91'
 
 export HOME="$test_root/home"
 export XDG_CONFIG_HOME="$test_root/config"
 export INSTALL_TEST_LOG="$test_root/omarchy.log"
 export PATH="$fake_bin:/usr/bin:/bin"
 
-if "$repo_root/install.sh" --no-restart >"$test_root/missing.out" 2>"$test_root/missing.err"; then
-  printf '%s\n' 'installer unexpectedly succeeded without longbridge' >&2
-  exit 1
-fi
-grep -F 'https://open.longbridge.com/docs/cli/install' "$test_root/missing.err" >/dev/null
-grep -F 'curl -sSL https://github.com/longbridge/longbridge-terminal/raw/main/install | sh' "$test_root/missing.err" >/dev/null
-
-make_fake longbridge 'exit 0'
-"$repo_root/install.sh" --no-restart
+"$repo_root/install.sh" --no-restart >"$test_root/missing.out" 2>"$test_root/missing.err"
+grep -F 'welcome page' "$test_root/missing.out" >/dev/null
+! grep -F 'curl unexpectedly executed' "$INSTALL_TEST_LOG"
+grep -F 'command -v python3' "$repo_root/install.sh" >/dev/null
 
 install_path="$XDG_CONFIG_HOME/omarchy/plugins/longbridge.omarchy"
 [[ -L "$install_path" ]]
 [[ "$(readlink -f "$install_path")" == "$repo_root" ]]
+[[ -x "$install_path/longbridge-quotes" ]]
 grep -Fx "plugin validate $repo_root" "$INSTALL_TEST_LOG" >/dev/null
 
-printf '%s\n' 'ok - CLI-only development installer'
+printf '%s\n' 'ok - development installer with welcome setup'
