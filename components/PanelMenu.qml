@@ -9,6 +9,7 @@ Item {
 
   required property color textColor
   required property string panelFontFamily
+  signal installCliRequested()
 
   implicitWidth: Style.space(28)
   implicitHeight: Style.space(28)
@@ -26,6 +27,11 @@ Item {
   function openGitHub() {
     Quickshell.execDetached(["xdg-open", "https://github.com/longbridge/omarchy-longbridge"])
     menu.close()
+  }
+
+  function showInstallGuide() {
+    menu.close()
+    root.installCliRequested()
   }
 
   Button {
@@ -55,6 +61,7 @@ Item {
     }
     contentItem: Column {
       id: menuItems
+      MenuRow { text: "Install CLI"; onActivated: root.showInstallGuide() }
       MenuRow { text: "Longbridge"; onActivated: root.openLongbridge() }
       MenuRow { text: "Longbridge CLI"; onActivated: root.openCliDocs() }
       MenuRow { text: "GitHub"; onActivated: root.openGitHub() }

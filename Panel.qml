@@ -23,6 +23,7 @@ Panel {
   property var marketState: Model.initialState([])
   property var portfolioState: PortfolioModel.initialState()
   property int activeTab: 0
+  property bool setupGuideOpen: false
   property double nowMs: Date.now()
 
   function moveSelection(delta) {
@@ -150,39 +151,55 @@ Panel {
         LongbridgeSetup {
           id: setup
           width: parent.width
-          visible: !ready
+          visible: !ready || root.setupGuideOpen
           panelOpen: root.opened
+          previewInstallGuide: root.setupGuideOpen
+          dismissible: ready && root.setupGuideOpen
           textColor: root.foreground
           panelFontFamily: root.fontFamily
+          onDismissed: root.setupGuideOpen = false
         }
 
         Item {
           id: panelHeader
-          visible: setup.ready
+          visible: setup.ready && !root.setupGuideOpen
           width: parent.width
-          implicitHeight: Style.space(28)
+          implicitHeight: Style.space(32)
 
           LongbridgeLogo {
             id: headerLogo
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            width: Style.space(20)
+            width: Style.space(24)
             height: width
             foregroundColor: root.foreground
             brandColors: true
           }
-          Text {
+          Column {
+            id: headerIdentityText
             anchors.left: headerLogo.right
-            anchors.leftMargin: Style.space(9)
+            anchors.leftMargin: Style.space(8)
             anchors.right: panelMenu.left
             anchors.rightMargin: Style.space(9)
             anchors.verticalCenter: parent.verticalCenter
-            text: "Longbridge"
-            color: root.foreground
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.title
-            font.bold: true
-            elide: Text.ElideRight
+            spacing: Style.space(1)
+            Text {
+              width: parent.width
+              text: "Longbridge"
+              color: root.foreground
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.body
+              font.bold: true
+              elide: Text.ElideRight
+            }
+            Text {
+              width: parent.width
+              text: "Markets & Portfolio"
+              color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.55)
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.caption
+              elide: Text.ElideRight
+            }
           }
           PanelMenu {
             id: panelMenu
@@ -190,12 +207,13 @@ Panel {
             anchors.verticalCenter: parent.verticalCenter
             textColor: root.foreground
             panelFontFamily: root.fontFamily
+            onInstallCliRequested: root.setupGuideOpen = true
           }
         }
 
         Rectangle {
           id: tabSegments
-          visible: setup.ready
+          visible: setup.ready && !root.setupGuideOpen
           width: Style.space(190)
           implicitHeight: Style.space(28)
           radius: 0
@@ -238,7 +256,7 @@ Panel {
 
         WatchlistView {
           id: watchlistView
-          visible: setup.ready && root.activeTab === 0
+          visible: setup.ready && !root.setupGuideOpen && root.activeTab === 0
           width: parent.width
           groups: watchlistService.groups
           activeGroupId: watchlistService.activeGroupId
@@ -254,7 +272,7 @@ Panel {
 
         PortfolioView {
           id: portfolioView
-          visible: setup.ready && root.activeTab === 1
+          visible: setup.ready && !root.setupGuideOpen && root.activeTab === 1
           width: parent.width
           portfolio: root.portfolioState
           loading: portfolioService.loading

@@ -10,12 +10,17 @@ Column {
   required property color textColor
   required property string panelFontFamily
   property bool panelOpen: false
+  property bool previewInstallGuide: false
+  property bool dismissible: false
   property string setupState: "idle"
   property string message: "Checking Longbridge…"
   readonly property bool ready: setupState === "ready"
+  readonly property bool showingInstall: previewInstallGuide
+    || setupState === "needs_install" || setupState === "install_failed"
   readonly property bool busy: availabilityProcess.running || installProcess.running
     || loginProcess.running || verifyProcess.running
   signal setupCompleted()
+  signal dismissed()
 
   width: parent ? parent.width : 0
   spacing: Style.space(16)
@@ -109,7 +114,7 @@ Column {
 
       Text {
         width: parent.width
-        text: root.setupState === "needs_install" || root.setupState === "install_failed"
+        text: root.showingInstall
           ? "Install the official Longbridge CLI"
           : "Sign in to your Longbridge account"
         color: root.textColor
@@ -119,7 +124,7 @@ Column {
       }
       Text {
         width: parent.width
-        visible: root.setupState === "needs_install" || root.setupState === "install_failed"
+        visible: root.showingInstall
         text: "Installer source: github.com/longbridge/longbridge-terminal"
         color: Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.58)
         font.family: root.panelFontFamily
@@ -135,12 +140,20 @@ Column {
         wrapMode: Text.Wrap
       }
       Button {
-        visible: root.setupState === "needs_install" || root.setupState === "install_failed"
+        visible: root.showingInstall
         text: "Install Longbridge CLI"
         foreground: root.textColor
         bordered: true
         enabled: !root.busy
         onClicked: root.installCli()
+      }
+      Button {
+        visible: root.dismissible
+        text: "Back"
+        foreground: root.textColor
+        bordered: false
+        enabled: !root.busy
+        onClicked: root.dismissed()
       }
       Button {
         visible: root.setupState === "needs_login" || root.setupState === "login_failed"

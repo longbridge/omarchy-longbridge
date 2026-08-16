@@ -7,6 +7,9 @@ grep -F 'text: "Longbridge CLI"' components/PanelMenu.qml >/dev/null
 grep -F 'https://open.longbridge.com/docs/cli/' components/PanelMenu.qml >/dev/null
 grep -F 'text: "GitHub"' components/PanelMenu.qml >/dev/null
 grep -F 'https://github.com/longbridge/omarchy-longbridge' components/PanelMenu.qml >/dev/null
+grep -F 'text: "Install CLI"' components/PanelMenu.qml >/dev/null
+grep -F 'signal installCliRequested()' components/PanelMenu.qml >/dev/null
+grep -F 'root.installCliRequested()' components/PanelMenu.qml >/dev/null
 [[ "$(grep -Fc 'Quickshell.execDetached(["xdg-open",' components/PanelMenu.qml)" -eq 3 ]]
 ! grep -Fi 'exit' components/PanelMenu.qml
 
@@ -22,7 +25,12 @@ grep -F 'PortfolioView {' Panel.qml >/dev/null
 grep -F 'WatchlistService {' Panel.qml >/dev/null
 ! grep -F 'QuoteService {' Panel.qml
 grep -F 'id: panelHeader' Panel.qml >/dev/null
-grep -F 'implicitHeight: Style.space(28)' Panel.qml >/dev/null
+grep -F 'implicitHeight: Style.space(32)' Panel.qml >/dev/null
+grep -F 'width: Style.space(24)' Panel.qml >/dev/null
+grep -F 'id: headerIdentityText' Panel.qml >/dev/null
+grep -F 'text: "Markets & Portfolio"' Panel.qml >/dev/null
+grep -F 'property bool setupGuideOpen: false' Panel.qml >/dev/null
+grep -F 'onInstallCliRequested: root.setupGuideOpen = true' Panel.qml >/dev/null
 grep -F 'anchors.verticalCenter: parent.verticalCenter' Panel.qml >/dev/null
 ! grep -F 'public quotes' Panel.qml
 ! grep -F 'Longbridge account portfolio' Panel.qml
@@ -49,5 +57,9 @@ grep -F 'iconText: "󰑐"' components/PortfolioView.qml >/dev/null
 grep -F 'tooltipText: "Refresh"' components/PortfolioView.qml >/dev/null
 ! grep -F 'text: "Refresh"' components/PortfolioView.qml
 grep -F 'implicitWidth: Style.space(28)' components/PanelMenu.qml >/dev/null
+grep -F 'property bool previewInstallGuide: false' components/LongbridgeSetup.qml >/dev/null
+grep -F 'property bool dismissible: false' components/LongbridgeSetup.qml >/dev/null
+grep -F 'visible: root.dismissible' components/LongbridgeSetup.qml >/dev/null
+grep -F 'text: "Back"' components/LongbridgeSetup.qml >/dev/null
 
 printf '%s\n' 'ok - compact panel source'
