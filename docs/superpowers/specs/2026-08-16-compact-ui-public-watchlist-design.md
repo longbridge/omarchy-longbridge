@@ -88,7 +88,15 @@ Neither tab claims real-time streaming. Update ages and refresh actions communic
 
 ## Compact panel layout
 
-The panel targets a fitted width of 390 Omarchy spacing units and a maximum fitted height of 620. A shallow header contains the official in-panel logo, plugin name, concise status text, and refresh action. A compact two-tab switch follows it. Controls use neutral theme colors.
+The panel targets a fitted width of 390 Omarchy spacing units and a maximum fitted height of 620. A shallow header contains the official in-panel logo, plugin name, concise status text, refresh action, and a neutral overflow-menu icon aligned to the top right. A compact two-tab switch follows it. Controls use neutral theme colors.
+
+The overflow menu contains exactly these external navigation actions:
+
+- **Longbridge** opens `https://longbridge.com`;
+- **Longbridge CLI** opens `https://open.longbridge.com/docs/cli/`;
+- **GitHub** opens `https://github.com/longbridge/omarchy-longbridge`.
+
+Each action launches the system browser with `Quickshell.execDetached(["xdg-open", fixedUrl])` and closes the menu. URLs are fixed application constants rather than user-provided strings. The menu has no exit, disable, login, installation, or destructive actions.
 
 ### Watchlist tab
 
@@ -123,6 +131,7 @@ CLI installation and login have explicit `idle`, `running`, `succeeded`, and `fa
 - `QuoteService.qml`: helper process lifecycle, polling, refresh coalescing, and QML-facing quote state.
 - `PortfolioService.qml`: Longbridge CLI lifecycle and portfolio state.
 - `components/LongbridgeSetup.qml`: mandatory welcome page, CLI availability, explicit official installation, login, and authenticated-session verification.
+- `components/PanelMenu.qml`: top-right overflow control and the three fixed external navigation actions.
 - `QuoteAdapter.js`: validates and adapts the public-helper envelope.
 - `CliAdapter.js`: contains portfolio-only parsing and command construction; quote CLI construction is removed.
 - `components/WatchlistView.qml`: compact list, add mode, selection, and quote detail composition.
@@ -151,7 +160,7 @@ Python tests cover every suffix mapping, numeric Hong Kong padding, malformed sy
 
 JavaScript tests cover helper-envelope validation, partial reconciliation, stale preservation, and existing portfolio adaptation. Command tests prove that watchlist refresh resolves only `longbridge-quotes` and that the only `longbridge` command in runtime source is the exact portfolio command.
 
-QML tests or deterministic source checks cover 44-unit rows, bounded list views, account-icon absence, monochrome bar treatment, and suppressed dot/underline decorations. `qmllint`, `omarchy plugin validate .`, installer tests, Python tests, JavaScript tests, and `git diff --check` form the automated acceptance suite.
+QML tests or deterministic source checks cover 44-unit rows, bounded list views, account-icon absence, monochrome bar treatment, suppressed dot/underline decorations, the three exact menu labels and URLs, and absence of an exit action. `qmllint`, `omarchy plugin validate .`, installer tests, Python tests, JavaScript tests, and `git diff --check` form the automated acceptance suite.
 
 Setup tests use fake `curl`, shell, and `longbridge` executables to cover missing CLI, explicit installation, installer failure, login success, login cancellation/failure, and post-login verification. They assert that opening the panel alone never starts installation or login, that no skip control exists, that normal tabs remain unavailable before verified login, and that post-onboarding watchlist refreshes never execute `longbridge`.
 
@@ -159,4 +168,4 @@ Visual acceptance inspects both tabs at empty, loading, populated, partial/stale
 
 ## Completion criteria
 
-The redesign is complete when mandatory onboarding prevents use until the official CLI is explicitly installed and login is verified; the watchlist can then load supported symbols without executing `longbridge`; Portfolio still loads through the exact Longbridge CLI command; both tabs preserve last-known data through failures; the holding list remains bounded and usable with many entries; all color and icon constraints are satisfied; installation documents both runtime requirements; and automated plus visual verification pass.
+The redesign is complete when mandatory onboarding prevents use until the official CLI is explicitly installed and login is verified; the watchlist can then load supported symbols without executing `longbridge`; Portfolio still loads through the exact Longbridge CLI command; both tabs preserve last-known data through failures; the holding list remains bounded and usable with many entries; the top-right menu opens the three specified external resources and contains no exit action; all color and icon constraints are satisfied; installation documents both runtime requirements; and automated plus visual verification pass.
