@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import qs.Commons
@@ -18,21 +17,15 @@ Panel {
   readonly property color urgent: bar ? bar.urgent : Color.urgent
   readonly property string fontFamily: bar ? bar.fontFamily : Style.font.family
   readonly property var watchlist: Model.normalizedSymbols(setting("watchlist", ["AAPL.US", "700.HK", "D05.SG"]))
-  readonly property var groups: Model.marketGroups(marketState)
-  readonly property var flatRows: Model.rows(marketState)
-  readonly property var selectedQuote: flatRows.length > 0
-    ? flatRows[Math.max(0, Math.min(selectedIndex, flatRows.length - 1))] : null
-  property var marketState: Model.initialState(watchlist)
-  property int selectedIndex: 0
-  property bool detailOpen: false
-  property double nowMs: Date.now()
-  property string feedback: ""
-  property int activeTab: 0
-  property var portfolioState: PortfolioModel.initialState()
-  // This plugin uses no bar-side status or open-panel decorations.
-  // A positive sub-pixel hint rounds to zero in the bar's indicator sizing.
+  readonly property var quoteRows: Model.rows(marketState)
   readonly property real openPanelIndicatorWidth: 0.01
   readonly property real openPanelIndicatorHeight: 0.01
+
+  property var marketState: Model.initialState(watchlist)
+  property var portfolioState: PortfolioModel.initialState()
+  property int activeTab: 0
+  property double nowMs: Date.now()
+  property string feedback: ""
 
   function persistWatchlist(symbols) {
     var entry = { id: root.moduleName, watchlist: Model.normalizedSymbols(symbols) }
@@ -46,7 +39,7 @@ Panel {
   function addSymbol(value) {
     var symbol = Model.normalizedSymbol(value)
     if (!Model.symbolIsValid(symbol)) {
-      feedback = "Use a Longbridge symbol such as AAPL.US or 700.HK."
+      feedback = "Use a symbol such as AAPL.US or 700.HK."
       return
     }
     if (watchlist.indexOf(symbol) >= 0) {
@@ -54,41 +47,31 @@ Panel {
       return
     }
     if (watchlist.length >= 20) {
-      feedback = "Longbridge supports up to 20 symbols."
+      feedback = "The watchlist supports up to 20 symbols."
       return
     }
     persistWatchlist(watchlist.concat([symbol]))
-    addField.text = ""
     feedback = symbol + " added."
   }
 
-  function removeSelected() {
-    if (!selectedQuote) return
-    var next = []
-    for (var i = 0; i < watchlist.length; i++) if (watchlist[i] !== selectedQuote.symbol) next.push(watchlist[i])
+  function removeWatchlistIndex(index) {
+    if (index < 0 || index >= watchlist.length) return
+    var next = watchlist.slice()
+    next.splice(index, 1)
     persistWatchlist(next)
-    selectedIndex = Math.max(0, Math.min(selectedIndex, next.length - 1))
-    detailOpen = false
+    watchlistView.selectedIndex = Math.max(0, Math.min(index, next.length - 1))
   }
 
   function moveSelection(delta) {
-    if (flatRows.length === 0) return
-    selectedIndex = Math.max(0, Math.min(flatRows.length - 1, selectedIndex + delta))
+    if (activeTab === 0) {
+      watchlistView.selectedIndex = Math.max(0, Math.min(quoteRows.length - 1, watchlistView.selectedIndex + delta))
+    } else {
+      var count = (portfolioState.positions || []).length
+      portfolioView.selectedIndex = Math.max(0, Math.min(count - 1, portfolioView.selectedIndex + delta))
+    }
   }
 
-  function activateSelected() {
-    if (selectedQuote) detailOpen = true
-  }
-
-  function groupOffset(groupIndex) {
-    var offset = 0
-    for (var i = 0; i < groupIndex; i++) offset += groups[i].rows.length
-    return offset
-  }
-
-  onWatchlistChanged: {
-    marketState = Model.initialState(watchlist)
-  }
+  onWatchlistChanged: marketState = Model.initialState(watchlist)
 
   QuoteService {
     id: quoteService
@@ -116,13 +99,17 @@ Panel {
     function open(): void { root.open() }
     function close(): void { root.close() }
     function toggle(): void { root.toggle() }
-    function reconnect(): string { quoteService.refresh(); return "ok" }
+    function refresh(): string {
+      if (root.activeTab === 0) quoteService.refresh()
+      else portfolioService.refresh()
+      return "ok"
+    }
     function status(): string {
       return JSON.stringify({
-        connection: quoteService.quoteState,
-        symbols: root.watchlist,
-        subscribed: root.marketState.subscribed,
-        selected: root.selectedQuote ? root.selectedQuote.symbol : ""
+        setup: setup.setupState,
+        tab: root.activeTab === 0 ? "watchlist" : "portfolio",
+        quotes: quoteService.quoteState,
+        symbols: root.watchlist
       })
     }
   }
@@ -146,12 +133,9 @@ Panel {
         }
       }
     }
-    tooltipText: "Longbridge · " + quoteService.quoteState
-    active: quoteService.quoteState === "error"
-    onPressed: function(buttonCode) {
-      if (buttonCode === Qt.LeftButton) root.toggle()
-    }
-
+    tooltipText: "Longbridge"
+    active: false
+    onPressed: function(buttonCode) { if (buttonCode === Qt.LeftButton) root.toggle() }
   }
 
   KeyboardPanel {
@@ -168,212 +152,145 @@ Panel {
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
-      blocked: addField.activeFocus
-      onMoveRequested: function(dx, dy) { if (dy !== 0) root.moveSelection(dy) }
-      onActivateRequested: root.activateSelected()
-      onDeleteRequested: root.removeSelected()
+      onMoveRequested: function(dx, dy) { if (dy !== 0 && setup.ready) root.moveSelection(dy) }
+      onActivateRequested: {
+        if (!setup.ready) return
+        if (root.activeTab === 0 && root.quoteRows.length > 0) watchlistView.detailOpen = true
+        else if (root.activeTab === 1 && root.portfolioState.positions.length > 0) portfolioView.detailOpen = true
+      }
+      onDeleteRequested: if (setup.ready && root.activeTab === 0) root.removeWatchlistIndex(watchlistView.selectedIndex)
       onCloseRequested: {
-        if (root.detailOpen) root.detailOpen = false
+        if (watchlistView.detailOpen) watchlistView.detailOpen = false
+        else if (portfolioView.detailOpen) portfolioView.detailOpen = false
         else root.close()
       }
       onTabRequested: function(direction) { root.switchPanel(direction) }
       onTextKey: function(text) {
+        if (!setup.ready) return
         var key = String(text || "").toLowerCase()
-        if (key === "a") addField.forceActiveFocus()
-        else if (key === "r") quoteService.refresh()
-        else if (key === "m") root.activeTab = 0
+        if (key === "a" && root.activeTab === 0) watchlistView.addMode = true
+        else if (key === "r" && root.activeTab === 0) quoteService.refresh()
+        else if (key === "r") portfolioService.refresh()
+        else if (key === "w" || key === "m") root.activeTab = 0
         else if (key === "p") root.activeTab = 1
       }
 
-      Flickable {
-        anchors.fill: parent
-        contentWidth: width
-        contentHeight: contentColumn.implicitHeight
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
+      Column {
+        id: contentColumn
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        spacing: Style.space(10)
 
-        Column {
-          id: contentColumn
+        LongbridgeSetup {
+          id: setup
           width: parent.width
-          spacing: Style.spacing.panelGap
+          visible: !ready
+          panelOpen: root.opened
+          textColor: root.foreground
+          panelFontFamily: root.fontFamily
+        }
 
-          LongbridgeSetup {
-            id: setup
-            width: parent.width
-            visible: !ready
-            panelOpen: root.opened
-            textColor: root.foreground
-            panelFontFamily: root.fontFamily
+        Row {
+          visible: setup.ready
+          width: parent.width
+          spacing: Style.space(9)
+
+          LongbridgeLogo {
+            width: Style.space(20)
+            height: width
+            foregroundColor: root.foreground
+            brandColors: true
           }
-
-          Row {
-            visible: setup.ready
-            width: parent.width
-            spacing: Style.space(10)
-
-            LongbridgeLogo {
-              width: Style.space(20)
-              height: width
-              foregroundColor: root.foreground
-              brandColors: true
-            }
-
-            Column {
-              width: parent.parent.width - parent.children[0].width - parent.spacing
-              Text {
-                width: parent.width
-                text: "Longbridge"
-                color: root.foreground
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.title
-                font.bold: true
-                elide: Text.ElideRight
-              }
-              Text {
-                width: parent.width
-                text: root.watchlist.length + " symbols · " + quoteService.quoteState
-                color: Qt.darker(root.foreground, 1.5)
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.caption
-              }
-            }
-          }
-
-          Row {
-            visible: setup.ready
-            width: parent.width
-            spacing: Style.space(6)
-            Repeater {
-              model: ["Markets", "Portfolio"]
-              Rectangle {
-                required property string modelData
-                required property int index
-                implicitWidth: tabText.implicitWidth + Style.space(22)
-                implicitHeight: Style.space(30)
-                radius: height / 2
-                color: index === root.activeTab ? Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.15) : "transparent"
-                border.width: index === root.activeTab ? 1 : 0
-                border.color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.24)
-                Text { id: tabText; anchors.centerIn: parent; text: modelData; color: root.foreground; font.family: root.fontFamily; font.pixelSize: Style.font.caption; font.bold: index === root.activeTab }
-                MouseArea { anchors.fill: parent; onClicked: root.activeTab = index }
-              }
-            }
-          }
-
-          ConnectionBanner {
-            visible: setup.ready && root.activeTab === 0
-            connectionState: quoteService.quoteState
-            detail: quoteService.message
-            textColor: root.foreground
-            warningColor: root.urgent
-            panelFontFamily: root.fontFamily
-            onActionRequested: {
-              quoteService.refresh()
-            }
-          }
-
-          SymbolDetail {
-            visible: setup.ready && root.activeTab === 0 && root.detailOpen && root.selectedQuote !== null
-            quote: root.selectedQuote || ({})
-            textColor: root.foreground
-            panelFontFamily: root.fontFamily
-            onBackRequested: root.detailOpen = false
-            onRemoveRequested: root.removeSelected()
-          }
-
           Column {
-            visible: setup.ready && root.activeTab === 0 && !root.detailOpen
-            width: parent.width
-            spacing: Style.space(8)
-
-            Row {
-              width: parent.width
-              spacing: Style.space(7)
-
-              TextField {
-                id: addField
-                width: parent.width - addButton.width - parent.spacing
-                placeholderText: "AAPL.US or 700.HK"
-                foreground: root.foreground
-                maximumLength: 24
-                Keys.onReturnPressed: root.addSymbol(text)
-              }
-
-              Button {
-                id: addButton
-                text: "Add"
-                iconText: "+"
-                bordered: true
-                foreground: root.foreground
-                fontFamily: root.fontFamily
-                enabled: addField.text.trim() !== ""
-                onClicked: root.addSymbol(addField.text)
-              }
-            }
-
+            width: Math.max(0, contentColumn.width - Style.space(20) - panelMenu.width - Style.space(18))
+            spacing: 0
             Text {
-              visible: root.feedback !== ""
               width: parent.width
-              text: root.feedback
-              color: Qt.darker(root.foreground, 1.5)
+              text: "Longbridge"
+              color: root.foreground
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.title
+              font.bold: true
+              elide: Text.ElideRight
+            }
+            Text {
+              width: parent.width
+              text: root.activeTab === 0
+                ? root.watchlist.length + " public quotes"
+                : "Longbridge account portfolio"
+              color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.58)
               font.family: root.fontFamily
               font.pixelSize: Style.font.caption
-              wrapMode: Text.Wrap
-            }
-
-            Text {
-              visible: root.watchlist.length === 0
-              width: parent.width
-              text: "Add a canonical Longbridge symbol to begin."
-              color: Qt.darker(root.foreground, 1.5)
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.body
-              horizontalAlignment: Text.AlignHCenter
-            }
-
-            Repeater {
-              model: root.groups
-              delegate: MarketGroup {
-                required property var modelData
-                required property int index
-                market: modelData.market
-                rows: modelData.rows
-                selectedIndex: root.selectedIndex
-                indexOffset: root.groupOffset(index)
-                nowMs: root.nowMs
-                textColor: root.foreground
-                panelFontFamily: root.fontFamily
-                onRowActivated: function(globalIndex) {
-                  root.selectedIndex = globalIndex
-                  root.detailOpen = true
-                }
-                onRowHovered: function(globalIndex) { root.selectedIndex = globalIndex }
-              }
+              elide: Text.ElideRight
             }
           }
-
-
-          PortfolioView {
-            visible: setup.ready && root.activeTab === 1
-            portfolio: root.portfolioState
-            loading: portfolioService.loading
-            bridgeMessage: portfolioService.message
+          PanelMenu {
+            id: panelMenu
+            anchors.verticalCenter: parent.verticalCenter
             textColor: root.foreground
-            accentColor: Color.accent
-            warningColor: root.urgent
             panelFontFamily: root.fontFamily
-            onRefreshRequested: portfolioService.refresh()
           }
+        }
 
-          Text {
-            visible: setup.ready && root.activeTab === 0
-            width: parent.width
-            text: "A add  ·  J/K select  ·  Enter detail  ·  X remove  ·  R reconnect"
-            color: Qt.darker(root.foreground, 1.5)
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.caption
-            horizontalAlignment: Text.AlignHCenter
+        Row {
+          visible: setup.ready
+          width: parent.width
+          spacing: Style.space(6)
+          Repeater {
+            model: ["Watchlist", "Portfolio"]
+            Rectangle {
+              required property string modelData
+              required property int index
+              implicitWidth: tabLabel.implicitWidth + Style.space(20)
+              implicitHeight: Style.space(28)
+              radius: height / 2
+              color: index === root.activeTab
+                ? Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
+                : "transparent"
+              border.width: index === root.activeTab ? 1 : 0
+              border.color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.18)
+              Text {
+                id: tabLabel
+                anchors.centerIn: parent
+                text: modelData
+                color: root.foreground
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                font.bold: index === root.activeTab
+              }
+              TapHandler { onTapped: root.activeTab = index }
+            }
           }
+        }
+
+        WatchlistView {
+          id: watchlistView
+          visible: setup.ready && root.activeTab === 0
+          width: parent.width
+          rows: root.quoteRows
+          loading: quoteService.loading
+          message: root.feedback || quoteService.message
+          nowMs: root.nowMs
+          textColor: root.foreground
+          panelFontFamily: root.fontFamily
+          onAddRequested: function(symbol) { root.addSymbol(symbol) }
+          onRemoveRequested: function(index) { root.removeWatchlistIndex(index) }
+          onRefreshRequested: quoteService.refresh()
+        }
+
+        PortfolioView {
+          id: portfolioView
+          visible: setup.ready && root.activeTab === 1
+          width: parent.width
+          portfolio: root.portfolioState
+          loading: portfolioService.loading
+          bridgeMessage: portfolioService.message
+          textColor: root.foreground
+          accentColor: Color.accent
+          warningColor: root.urgent
+          panelFontFamily: root.fontFamily
+          onRefreshRequested: portfolioService.refresh()
         }
       }
     }
