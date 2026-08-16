@@ -93,13 +93,13 @@ Panel {
   QuoteService {
     id: quoteService
     symbols: root.watchlist
-    panelOpen: root.opened
+    panelOpen: root.opened && setup.ready
     onQuoteEvent: function(event) { root.marketState = Model.applyEvent(root.marketState, event) }
   }
 
   PortfolioService {
     id: portfolioService
-    panelOpen: root.opened
+    panelOpen: root.opened && setup.ready
     active: root.activeTab === 1
     onPortfolioEvent: function(event) { root.portfolioState = PortfolioModel.applyEvent(root.portfolioState, event) }
   }
@@ -197,7 +197,17 @@ Panel {
           width: parent.width
           spacing: Style.spacing.panelGap
 
+          LongbridgeSetup {
+            id: setup
+            width: parent.width
+            visible: !ready
+            panelOpen: root.opened
+            textColor: root.foreground
+            panelFontFamily: root.fontFamily
+          }
+
           Row {
+            visible: setup.ready
             width: parent.width
             spacing: Style.space(10)
 
@@ -230,6 +240,7 @@ Panel {
           }
 
           Row {
+            visible: setup.ready
             width: parent.width
             spacing: Style.space(6)
             Repeater {
@@ -250,7 +261,7 @@ Panel {
           }
 
           ConnectionBanner {
-            visible: root.activeTab === 0
+            visible: setup.ready && root.activeTab === 0
             connectionState: quoteService.quoteState
             detail: quoteService.message
             textColor: root.foreground
@@ -262,7 +273,7 @@ Panel {
           }
 
           SymbolDetail {
-            visible: root.activeTab === 0 && root.detailOpen && root.selectedQuote !== null
+            visible: setup.ready && root.activeTab === 0 && root.detailOpen && root.selectedQuote !== null
             quote: root.selectedQuote || ({})
             textColor: root.foreground
             panelFontFamily: root.fontFamily
@@ -271,7 +282,7 @@ Panel {
           }
 
           Column {
-            visible: root.activeTab === 0 && !root.detailOpen
+            visible: setup.ready && root.activeTab === 0 && !root.detailOpen
             width: parent.width
             spacing: Style.space(8)
 
@@ -343,7 +354,7 @@ Panel {
 
 
           PortfolioView {
-            visible: root.activeTab === 1
+            visible: setup.ready && root.activeTab === 1
             portfolio: root.portfolioState
             loading: portfolioService.loading
             bridgeMessage: portfolioService.message
@@ -355,7 +366,7 @@ Panel {
           }
 
           Text {
-            visible: root.activeTab === 0
+            visible: setup.ready && root.activeTab === 0
             width: parent.width
             text: "A add  ·  J/K select  ·  Enter detail  ·  X remove  ·  R reconnect"
             color: Qt.darker(root.foreground, 1.5)

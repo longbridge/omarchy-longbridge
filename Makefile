@@ -2,6 +2,7 @@ QMLLINT := /usr/lib/qt6/bin/qmllint
 QMLTESTRUNNER := /usr/lib/qt6/bin/qmltestrunner
 QML_FILES := Panel.qml QuoteService.qml PortfolioService.qml \
 	components/ConnectionBanner.qml \
+	components/LongbridgeSetup.qml \
 	components/MarketGroup.qml \
 	components/LongbridgeLogo.qml \
 	components/PortfolioView.qml \
@@ -16,10 +17,11 @@ test-python:
 	python -m unittest -v tests.test_longbridge_quotes
 
 test-js:
-	node --test tests/test_quote_adapter.js tests/test_cli_adapter.js tests/test_model.js tests/test_portfolio_model.js
+	node --test tests/test_quote_adapter.js tests/test_cli_adapter.js tests/test_setup_adapter.js tests/test_model.js tests/test_portfolio_model.js
 
 test-install:
 	bash tests/test_install.sh
+	bash tests/test_setup_source.sh
 
 test-qml:
 	env -u QT_QPA_PLATFORMTHEME QT_QPA_PLATFORM=offscreen $(QMLTESTRUNNER) -input tests/qml -import components
