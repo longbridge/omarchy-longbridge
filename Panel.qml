@@ -154,7 +154,7 @@ Panel {
           visible: !ready || root.setupGuideOpen
           panelOpen: root.opened
           previewInstallGuide: root.setupGuideOpen
-          dismissible: ready && root.setupGuideOpen
+          dismissible: setup.cliInstalled && root.setupGuideOpen
           textColor: root.foreground
           panelFontFamily: root.fontFamily
           onDismissed: root.setupGuideOpen = false

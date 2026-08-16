@@ -58,7 +58,10 @@ grep -F 'tooltipText: "Refresh"' components/PortfolioView.qml >/dev/null
 ! grep -F 'text: "Refresh"' components/PortfolioView.qml
 grep -F 'implicitWidth: Style.space(28)' components/PanelMenu.qml >/dev/null
 grep -F 'property bool previewInstallGuide: false' components/LongbridgeSetup.qml >/dev/null
+grep -F 'property bool cliInstalled: false' components/LongbridgeSetup.qml >/dev/null
 grep -F 'property bool dismissible: false' components/LongbridgeSetup.qml >/dev/null
+grep -F 'root.cliInstalled = true' components/LongbridgeSetup.qml >/dev/null
+grep -F 'dismissible: setup.cliInstalled && root.setupGuideOpen' Panel.qml >/dev/null
 grep -F 'visible: root.dismissible' components/LongbridgeSetup.qml >/dev/null
 grep -F 'text: "Back"' components/LongbridgeSetup.qml >/dev/null
 

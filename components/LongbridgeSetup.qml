@@ -11,6 +11,7 @@ Column {
   required property string panelFontFamily
   property bool panelOpen: false
   property bool previewInstallGuide: false
+  property bool cliInstalled: false
   property bool dismissible: false
   property string setupState: "idle"
   property string message: "Checking Longbridge…"
@@ -181,8 +182,11 @@ Column {
     stdout: StdioCollector { id: availabilityOutput; waitForEnd: true }
     stderr: StdioCollector { waitForEnd: true }
     onExited: function(exitCode) {
-      if (exitCode === 0 && String(availabilityOutput.text || "").trim() !== "") root.verifyLogin()
-      else {
+      if (exitCode === 0 && String(availabilityOutput.text || "").trim() !== "") {
+        root.cliInstalled = true
+        root.verifyLogin()
+      } else {
+        root.cliInstalled = false
         root.setupState = "needs_install"
         root.message = "Longbridge CLI is required before this plugin can be used."
       }
