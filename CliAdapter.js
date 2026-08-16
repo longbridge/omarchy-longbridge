@@ -1,7 +1,101 @@
 .pragma library
 
+function watchlistCommand() {
+  return ["longbridge", "watchlist", "--format", "json"]
+}
+
+function quoteCommand(symbols) {
+  var command = ["longbridge", "quote"]
+  var source = symbols && typeof symbols.length === "number" ? symbols : []
+  for (var i = 0; i < source.length; i++) command.push(String(source[i]))
+  command.push("--format", "json")
+  return command
+}
+
 function portfolioCommand() {
   return ["longbridge", "portfolio", "--format", "json"]
+}
+
+function parseWatchlist(text) {
+  var payload = parseJson(text)
+  if (!payload.ok || !Array.isArray(payload.value)) return invalid("Longbridge returned invalid watchlist data.")
+  var groups = []
+  var defaultGroupId = ""
+  var allCount = 0
+  for (var i = 0; i < payload.value.length; i++) {
+    var source = payload.value[i]
+    if (!source || typeof source !== "object" || !Array.isArray(source.securities))
+      return invalid("Longbridge returned invalid watchlist data.")
+    var id = String(source.id)
+    var name = String(source.name || "")
+    if (name.toLowerCase() === "all") {
+      allCount++
+      defaultGroupId = id
+    }
+    var securities = []
+    for (var j = 0; j < source.securities.length; j++) {
+      var security = source.securities[j]
+      if (!security || typeof security !== "object" || !security.symbol)
+        return invalid("Longbridge returned invalid watchlist data.")
+      securities.push({
+        symbol: String(security.symbol),
+        name: String(security.name || ""),
+        market: String(security.market || "Unknown"),
+        is_pinned: security.is_pinned === true
+      })
+    }
+    groups.push({ id: id, name: name, securities: securities })
+  }
+  if (allCount !== 1) return invalid("Longbridge watchlist has no unique all group.")
+  return { ok: true, groups: groups, defaultGroupId: defaultGroupId }
+}
+
+function parseQuotes(text) {
+  var payload = parseJson(text)
+  if (!payload.ok || !Array.isArray(payload.value)) return invalid("Longbridge returned invalid quote data.")
+  var quotes = []
+  for (var i = 0; i < payload.value.length; i++) {
+    var source = payload.value[i]
+    if (!source || typeof source !== "object" || !source.symbol) return invalid("Longbridge returned invalid quote data.")
+    var session = newestSession(source)
+    var active = session ? session.quote : source
+    quotes.push({
+      symbol: String(source.symbol),
+      name: String(source.name || ""),
+      currency: String(source.currency || ""),
+      last: String(active.last || source.last || "0"),
+      prev_close: String(source.prev_close || active.prev_close || "0"),
+      open: String(source.open || "0"),
+      high: String(active.high || source.high || "0"),
+      low: String(active.low || source.low || "0"),
+      volume: String(active.volume === undefined ? (source.volume || "0") : active.volume),
+      turnover: String(active.turnover || source.turnover || "0"),
+      timestamp: session ? Math.floor(Date.parse(active.timestamp) / 1000) : Math.floor(Date.now() / 1000),
+      trade_status: String(source.status || "Unknown"),
+      trade_session: session ? session.name : "Intraday"
+    })
+  }
+  return { ok: true, event: { type: "snapshot", quotes: quotes, errors: [] } }
+}
+
+function newestSession(source) {
+  var candidates = [
+    { name: "Pre", quote: source.pre_market },
+    { name: "Post", quote: source.post_market },
+    { name: "Overnight", quote: source.overnight }
+  ]
+  var newest = null
+  var newestTime = -1
+  for (var i = 0; i < candidates.length; i++) {
+    var quote = candidates[i].quote
+    if (!quote || !quote.last || !quote.timestamp) continue
+    var time = Date.parse(quote.timestamp)
+    if (!isNaN(time) && time > newestTime) {
+      newest = candidates[i]
+      newestTime = time
+    }
+  }
+  return newest
 }
 
 function parsePortfolio(text) {
