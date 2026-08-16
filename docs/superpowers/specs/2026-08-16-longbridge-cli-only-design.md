@@ -49,6 +49,12 @@ The following Rust/helper artifacts will be removed:
 
 The manifest remains named `Longbridge` with ID `longbridge.omarchy`.
 
+## Brand icon
+
+`LongbridgeLogo.qml` recreates the official seven-rectangle Longbridge mark from the referenced 69×69 SVG. It uses the original relative geometry: foreground bars at `(0,0,3,69)`, `(33,60,3,9)`, and `(53,43,9,26)`; teal `#00DBB6` at `(7,0,10,69)`; yellow `#FFE000` at `(21,60,9,9)`; and orange `#FC5200` at `(40,52,10,17)` and `(66,26,3,43)`.
+
+The three originally black rectangles use an injected Omarchy foreground color so the mark remains legible in both dark and light themes. The component preserves a square aspect ratio, scales all geometry from the 69-unit source view box, and is used in the bar button, panel header, and portfolio account badge. No SVG is fetched at runtime and no bitmap asset is generated.
+
 ## Testing
 
 JavaScript fixture tests cover quote arrays, extended-hours selection, portfolio overview/holdings mapping, malformed JSON shapes, and safe error classification. A shell test uses a fake `longbridge` executable to verify exact argument construction without network access. QML lint and `omarchy plugin validate` remain part of `make validate`.
