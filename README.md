@@ -4,6 +4,8 @@ A compact Omarchy watchlist and Longbridge portfolio panel.
 
 The Watchlist loads your authenticated Longbridge groups and Longbridge prices. The Portfolio tab uses Longbridge Terminal for account data.
 
+![Longbridge watchlist panel](assets/longbridge-panel.png)
+
 ## Requirements
 
 - Omarchy
