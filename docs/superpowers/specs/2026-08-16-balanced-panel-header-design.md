@@ -22,4 +22,6 @@ The subtitle uses the panel foreground with reduced opacity and the caption font
 
 ## Scope and Verification
 
-Only the ready-state identity header changes. Setup, tabs, menus, data loading, and portfolio/watchlist content remain unchanged. Source checks will assert the subtitle, 24-unit logo, and shared centered text column; the existing validation suite must continue to pass.
+The popup menu adds an `Install CLI` item. Activating it opens the existing setup component in install-guide mode even when authentication is already ready, allowing developers and users to revisit and test installation. This manually opened guide has a Back action; the mandatory first-run guide remains non-dismissible when the CLI is unavailable or login is incomplete. Returning from the guide does not change authentication state.
+
+Tabs, data loading, and portfolio/watchlist content otherwise remain unchanged. Source checks will assert the subtitle, 24-unit logo, shared centered text column, menu action, and dismissible manual guide; the existing validation suite must continue to pass.
