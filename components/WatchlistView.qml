@@ -239,13 +239,13 @@ Column {
   }
 
   Rectangle {
+    id: watchlistFrame
     visible: !root.detailOpen
     width: parent.width
-    height: Math.min(Style.space(352), Math.max(Style.space(88), quoteList.contentHeight))
-    radius: Style.cornerRadius
-    color: Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.025)
-    border.width: 1
-    border.color: Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.10)
+    height: Math.min(Style.space(430), Math.max(Style.space(88), quoteList.contentHeight))
+    radius: 0
+    color: "transparent"
+    border.width: 0
     clip: true
 
     // A tap anywhere in the list area, row or gap, closes the filter box.
@@ -254,7 +254,7 @@ Column {
     ListView {
       id: quoteList
       anchors.fill: parent
-      anchors.margins: 1
+      anchors.margins: 0
       model: root.rowKeys
       currentIndex: root.selectedIndex
       boundsBehavior: Flickable.StopAtBounds
@@ -269,6 +269,7 @@ Column {
         lossColor: root.lossColor
         panelFontFamily: root.panelFontFamily
         selected: index === root.selectedIndex
+        striped: index % 2 === 0
         stale: quote.ready && Number(quote.timestamp || 0) > 0
           && root.nowMs - Number(quote.timestamp) * 1000 > 300000
         onActivated: {

@@ -16,7 +16,9 @@ grep -F 'root.installCliRequested()' components/PanelMenu.qml >/dev/null
 grep -F 'width: Style.space(11)' Panel.qml >/dev/null
 grep -F 'openPanelIndicatorWidth: 0.01' Panel.qml >/dev/null
 grep -F 'openPanelIndicatorHeight: 0.01' Panel.qml >/dev/null
-grep -F 'contentHeight: panel.fittedContentHeight(contentColumn.implicitHeight, Style.space(700))' Panel.qml >/dev/null
+grep -F 'contentHeight: panel.fittedContentHeight(contentColumn.implicitHeight, Style.space(780))' Panel.qml >/dev/null
+grep -F 'height: Math.min(Style.space(430), Math.max(Style.space(88), quoteList.contentHeight))' components/WatchlistView.qml >/dev/null
+grep -F 'height: Math.min(Style.space(386), Math.max(Style.space(88), holdingsList.contentHeight))' components/PortfolioView.qml >/dev/null
 ! grep -F 'anchors.right: parent.right' Panel.qml | grep -F 'Style.space(5)'
 grep -F 'visible: setup.ready' Panel.qml >/dev/null
 grep -F 'panelOpen: root.opened && setup.ready' Panel.qml >/dev/null
@@ -44,6 +46,14 @@ grep -F 'radius: 0' Panel.qml >/dev/null
 
 grep -F 'implicitHeight: Style.space(44)' components/WatchlistRow.qml >/dev/null
 grep -F 'implicitHeight: Style.space(44)' components/HoldingRow.qml >/dev/null
+grep -F 'property bool striped: false' components/WatchlistRow.qml >/dev/null
+grep -F 'property bool striped: false' components/HoldingRow.qml >/dev/null
+grep -F 'striped: index % 2 === 0' components/WatchlistView.qml >/dev/null
+grep -F 'striped: index % 2 === 0' components/PortfolioView.qml >/dev/null
+grep -F 'id: watchlistFrame' components/WatchlistView.qml >/dev/null
+grep -F 'id: holdingsFrame' components/PortfolioView.qml >/dev/null
+grep -F 'anchors.margins: 0' components/WatchlistView.qml >/dev/null
+grep -F 'anchors.margins: 0' components/PortfolioView.qml >/dev/null
 grep -F 'spacing: Style.space(4)' components/HoldingRow.qml >/dev/null
 grep -F 'ListView {' components/WatchlistView.qml >/dev/null
 grep -F 'Dropdown {' components/WatchlistView.qml >/dev/null
