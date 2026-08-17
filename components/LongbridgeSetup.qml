@@ -65,22 +65,14 @@ Column {
     spacing: Style.space(6)
     topPadding: Style.space(10)
 
-    LongbridgeLogo {
+    LongbridgeLogoFull {
       anchors.horizontalCenter: parent.horizontalCenter
-      width: Style.space(40)
-      height: width
-      foregroundColor: root.textColor
-      brandColors: true
-    }
-
-    Text {
-      width: parent.width
-      horizontalAlignment: Text.AlignHCenter
-      text: "Longbridge"
-      color: root.textColor
-      font.family: root.panelFontFamily
-      font.pixelSize: Style.font.display
-      font.bold: true
+      foreground: root.textColor
+      fontFamily: root.panelFontFamily
+      markSize: Style.space(34)
+      fontSize: Style.font.display
+      gap: Style.space(10)
+      width: implicitWidth
     }
 
     Text {

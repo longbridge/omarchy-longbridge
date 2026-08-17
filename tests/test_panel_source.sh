@@ -27,8 +27,10 @@ grep -F 'WatchlistService {' Panel.qml >/dev/null
 grep -F 'id: panelHeader' Panel.qml >/dev/null
 grep -F 'implicitHeight: Style.space(32)' Panel.qml >/dev/null
 grep -F 'anchors.bottom: tabSegments.bottom' Panel.qml >/dev/null
+grep -F 'y: root.height - word.baselineOffset' components/LongbridgeLogoFull.qml >/dev/null
 grep -F 'PanelSeparator {' components/PanelMenu.qml >/dev/null
-grep -F 'id: headerIdentityText' Panel.qml >/dev/null
+grep -F 'LongbridgeLogoFull {' Panel.qml >/dev/null
+grep -F 'id: headerIdentity' Panel.qml >/dev/null
 ! grep -F 'text: "Markets & Portfolio"' Panel.qml
 grep -F 'property bool setupGuideOpen: false' Panel.qml >/dev/null
 grep -F 'onInstallCliRequested: root.setupGuideOpen = true' Panel.qml >/dev/null

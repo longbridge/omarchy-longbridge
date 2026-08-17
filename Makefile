@@ -6,6 +6,7 @@ QML_FILES := Panel.qml LongbridgeRpc.qml QuoteFeed.qml WatchlistService.qml Port
 	components/LiveIndicator.qml \
 	components/Sparkline.qml \
 	components/LongbridgeLogo.qml \
+	components/LongbridgeLogoFull.qml \
 	components/HoldingRow.qml \
 	components/PanelMenu.qml \
 	components/PortfolioView.qml \

@@ -192,39 +192,19 @@ Panel {
           width: parent.width
           implicitHeight: Style.space(32)
 
-          LongbridgeLogo {
-            id: headerLogo
+          // Mark and wordmark as one lockup, sharing the tab strip's baseline.
+          LongbridgeLogoFull {
+            id: headerIdentity
             anchors.left: parent.left
-            // Shares the tab strip's baseline, so mark, wordmark and tabs all
-            // end on the same line.
-            anchors.bottom: tabSegments.bottom
-            // A little under the tab strip's height: matching it exactly made
-            // the mark heavier than the word beside it.
-            width: Math.round(tabSegments.height * 0.78)
-            height: width
-            foregroundColor: root.foreground
-            brandColors: true
-          }
-          // Just the wordmark, centred on the mark. The subtitle said nothing
-          // the two tabs beside it do not.
-          Text {
-            id: headerIdentityText
-            anchors.left: headerLogo.right
-            anchors.leftMargin: Style.space(8)
             anchors.right: tabSegments.left
             anchors.rightMargin: Style.space(9)
-            // Bottom-aligned with the mark: the wordmark's descenders sit a
-            // little below its baseline, so the box is nudged down to put the
-            // letters, not the box, on the logo's edge.
-            anchors.bottom: headerLogo.bottom
-            anchors.bottomMargin: -Style.space(2)
-            text: "Longbridge"
-            color: root.foreground
-            font.family: root.fontFamily
-            font.pixelSize: Style.font.heading
-            font.bold: true
-            elide: Text.ElideRight
+            anchors.bottom: tabSegments.bottom
+            foreground: root.foreground
+            fontFamily: root.fontFamily
+            // The lockup stands exactly as tall as the tab strip opposite it.
+            markSize: tabSegments.height
           }
+
           PanelMenu {
             id: panelMenu
             anchors.right: parent.right
