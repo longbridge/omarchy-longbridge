@@ -26,7 +26,7 @@ grep -F 'WatchlistService {' Panel.qml >/dev/null
 ! grep -F 'QuoteService {' Panel.qml
 grep -F 'id: panelHeader' Panel.qml >/dev/null
 grep -F 'implicitHeight: Style.space(32)' Panel.qml >/dev/null
-grep -F 'anchors.bottom: tabSegments.bottom' Panel.qml >/dev/null
+grep -F 'anchors.verticalCenter: tabSegments.verticalCenter' Panel.qml >/dev/null
 grep -F 'y: root.height - word.baselineOffset' components/LongbridgeLogoFull.qml >/dev/null
 grep -F 'PanelSeparator {' components/PanelMenu.qml >/dev/null
 grep -F 'LongbridgeLogoFull {' Panel.qml >/dev/null

@@ -192,13 +192,13 @@ Panel {
           width: parent.width
           implicitHeight: Style.space(32)
 
-          // Mark and wordmark as one lockup, sharing the tab strip's baseline.
+          // Mark and wordmark as one lockup, centred on the tab strip opposite.
           LongbridgeLogoFull {
             id: headerIdentity
             anchors.left: parent.left
             anchors.right: tabSegments.left
             anchors.rightMargin: Style.space(9)
-            anchors.bottom: tabSegments.bottom
+            anchors.verticalCenter: tabSegments.verticalCenter
             foreground: root.foreground
             fontFamily: root.fontFamily
           }
