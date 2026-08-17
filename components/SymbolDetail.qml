@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import qs.Commons
 import qs.Ui
 import "../Model.js" as Model
@@ -31,6 +32,12 @@ Column {
     return String(amount)
   }
 
+  function openQuotePage() {
+    var symbol = String(root.quote && root.quote.symbol || "")
+    if (!symbol) return
+    Quickshell.execDetached(["xdg-open", "https://longbridge.com/quote/" + symbol])
+  }
+
   function ratio(value, divisor) {
     var top = Number(value || 0)
     var bottom = Number(divisor || 0)
@@ -53,7 +60,24 @@ Column {
       onClicked: root.backRequested()
     }
 
-    Item { width: Math.max(0, parent.width - parent.children[0].width - parent.spacing); height: 1 }
+    Item {
+      width: Math.max(0, parent.width - parent.children[0].width - openButton.width - parent.spacing * 2)
+      height: 1
+    }
+
+    // The full quote page, for everything a bar panel has no room for.
+    PanelActionButton {
+      id: openButton
+      anchors.verticalCenter: parent.verticalCenter
+      iconText: "󰖟"
+      tooltipText: "Open on longbridge.com"
+      foreground: root.textColor
+      fontFamily: root.panelFontFamily
+      size: Style.space(28)
+      bordered: true
+      enabled: String(root.quote && root.quote.symbol || "") !== ""
+      onClicked: root.openQuotePage()
+    }
   }
 
   Column {

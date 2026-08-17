@@ -76,6 +76,8 @@ The list is keyed by symbol, so a price tick updates the rows in place rather th
 
 Each 44-unit row carries an intraday sparkline in its own fixed column, drawn from sixty five-minute closes (`quote.candlesticks`) in the row's own rise or fall colour, with a dashed rule at the previous close — the level the percentage beside it is measured against. The forming bar tracks the live price, so the line moves with the number. A row asks for its own chart the first time it is drawn and no more than three requests are in flight at once, so a group of hundreds only fetches what the list actually shows. Rows restored from the cache ask before the session has started, so that queue waits for the session rather than being spent against a server that is not running yet; the selected row's detail draws the same series full width.
 
+The detail view links out to `https://longbridge.com/quote/<symbol>` for everything a bar panel has no room for, opened with `xdg-open` like the resource menu's links.
+
 Each 44-unit row shows the symbol, name, price and percentage movement, plus a clock glyph when the last tick is over five minutes old. Currency is not repeated per row — the market is already in the symbol — and appears with the price in the detail view, which also carries OHLC, volume, session and timestamp. Pushed updates are folded per symbol and applied every 500ms, so prices stay current without repainting the list on every tick.
 
 ## Portfolio

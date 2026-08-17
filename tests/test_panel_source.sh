@@ -59,6 +59,11 @@ grep -F 'function releaseSearch()' components/WatchlistView.qml >/dev/null
 ! grep -F 'text: "STALE"' components/WatchlistRow.qml
 ! grep -F 'root.quote.currency' components/WatchlistRow.qml
 grep -F 'ToolTip.text: "Last price is more than five minutes old"' components/WatchlistRow.qml >/dev/null
+# The detail links out to the full quote page, and opens it the same way the
+# resource menu opens its links.
+grep -F '"https://longbridge.com/quote/" + symbol' components/SymbolDetail.qml >/dev/null
+grep -F 'Quickshell.execDetached(["xdg-open"' components/SymbolDetail.qml >/dev/null
+grep -F 'tooltipText: "Open on longbridge.com"' components/SymbolDetail.qml >/dev/null
 grep -F 'blocked: root.activeTab === 0 && watchlistView.searching' Panel.qml >/dev/null
 grep -F 'watchlistView.focusSearch()' Panel.qml >/dev/null
 grep -F 'Quickshell.cachePath("longbridge/watchlist.json")' WatchlistService.qml >/dev/null
