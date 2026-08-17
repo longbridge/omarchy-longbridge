@@ -179,18 +179,23 @@ Column {
 
         // Only offered once there is something to clear, so the field stays quiet
         // while empty.
-        Text {
+        Item {
           id: clearButton
+          width: Style.space(28)
+          height: Style.space(28)
           anchors.right: parent.right
-          anchors.rightMargin: Style.space(7)
           anchors.verticalCenter: parent.verticalCenter
           visible: searchField.text !== ""
-          text: "✕"
-          color: clearHover.hovered
-            ? root.textColor
-            : Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.55)
-          font.family: root.panelFontFamily
-          font.pixelSize: Style.font.caption
+
+          Text {
+            anchors.centerIn: parent
+            text: "✕"
+            color: clearHover.hovered
+              ? root.textColor
+              : Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.55)
+            font.family: root.panelFontFamily
+            font.pixelSize: Style.font.caption
+          }
 
           HoverHandler { id: clearHover; cursorShape: Qt.PointingHandCursor }
           TapHandler { onTapped: root.clearSearch() }
