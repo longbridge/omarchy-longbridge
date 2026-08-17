@@ -11,6 +11,10 @@ Column {
   required property string activeGroupId
   required property var rows
   required property color textColor
+  required property color accentColor
+  required property color urgentColor
+  required property color gainColor
+  required property color lossColor
   required property string panelFontFamily
   property bool loading: false
   property string message: ""
@@ -214,6 +218,7 @@ Column {
       id: liveIndicator
       anchors.verticalCenter: parent.verticalCenter
       textColor: root.textColor
+      liveColor: root.gainColor
       panelFontFamily: root.panelFontFamily
       live: root.live
       connecting: root.connecting
@@ -260,6 +265,8 @@ Column {
         required property int index
         quote: root.rowFor(modelData)
         textColor: root.textColor
+        gainColor: root.gainColor
+        lossColor: root.lossColor
         panelFontFamily: root.panelFontFamily
         selected: index === root.selectedIndex
         stale: quote.ready && Number(quote.timestamp || 0) > 0
@@ -289,6 +296,8 @@ Column {
     visible: root.detailOpen && root.selectedQuote !== null
     quote: root.selectedQuote || ({})
     textColor: root.textColor
+    gainColor: root.gainColor
+    lossColor: root.lossColor
     panelFontFamily: root.panelFontFamily
     onBackRequested: root.detailOpen = false
   }

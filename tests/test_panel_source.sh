@@ -31,6 +31,7 @@ grep -F 'y: root.height - word.baselineOffset' components/LongbridgeLogoFull.qml
 grep -F 'PanelSeparator {' components/PanelMenu.qml >/dev/null
 grep -F 'LongbridgeLogoFull {' Panel.qml >/dev/null
 grep -F 'id: headerIdentity' Panel.qml >/dev/null
+grep -F 'anchors.leftMargin: 1' Panel.qml >/dev/null
 ! grep -F 'text: "Markets & Portfolio"' Panel.qml
 grep -F 'property bool setupGuideOpen: false' Panel.qml >/dev/null
 grep -F 'onInstallCliRequested: root.setupGuideOpen = true' Panel.qml >/dev/null
@@ -92,6 +93,27 @@ grep -F 'ListView {' components/PortfolioView.qml >/dev/null
 ! grep -F 'refreshRequested' components/WatchlistView.qml
 grep -F 'LiveIndicator {' components/PortfolioView.qml >/dev/null
 grep -F 'LiveIndicator {' components/WatchlistView.qml >/dev/null
+! grep -F 'SequentialAnimation on opacity' components/LiveIndicator.qml
+grep -F 'liveColor: root.gainColor' components/PortfolioView.qml >/dev/null
+grep -F 'liveColor: root.gainColor' components/WatchlistView.qml >/dev/null
+# Semantic UI colors must come from the active system theme. Only the logo may
+# retain Longbridge's fixed brand palette.
+grep -F 'required property color foregroundColor' components/LongbridgeLogo.qml >/dev/null
+! grep -F 'property color foregroundColor: "#' components/LongbridgeLogo.qml
+grep -F 'accentColor: Color.accent' Panel.qml >/dev/null
+grep -F 'urgentColor: root.urgent' Panel.qml >/dev/null
+grep -F 'gainColor: themePalette.green' Panel.qml >/dev/null
+grep -F 'lossColor: themePalette.red' Panel.qml >/dev/null
+grep -F 'readonly property color green:' ThemePalette.qml >/dev/null
+grep -F 'readonly property color red:' ThemePalette.qml >/dev/null
+! grep -nE '#[0-9A-Fa-f]{3,8}' \
+  components/HoldingRow.qml \
+  components/LiveIndicator.qml \
+  components/PortfolioView.qml \
+  components/Sparkline.qml \
+  components/SymbolDetail.qml \
+  components/WatchlistRow.qml \
+  components/WatchlistView.qml
 # Charts live in their own fixed column so every row's line starts at the same x.
 grep -F 'Sparkline {' components/WatchlistRow.qml >/dev/null
 grep -F 'Sparkline {' components/SymbolDetail.qml >/dev/null

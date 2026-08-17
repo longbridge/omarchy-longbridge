@@ -9,6 +9,8 @@ Column {
 
   required property var quote
   property color textColor: Color.foreground
+  required property color gainColor
+  required property color lossColor
   property string panelFontFamily: Style.font.family
   signal backRequested()
 
@@ -16,7 +18,7 @@ Column {
   readonly property real previousValue: Number(root.quote && root.quote.prev_close || 0)
   readonly property real changeValue: previousValue > 0 ? lastValue - previousValue : 0
   readonly property real changePercent: previousValue > 0 ? (changeValue / previousValue) * 100 : 0
-  readonly property color movementColor: changeValue < 0 ? "#ff6b7a" : "#63d297"
+  readonly property color movementColor: changeValue < 0 ? lossColor : gainColor
 
   function signed(value, places) {
     var amount = Number(value || 0)

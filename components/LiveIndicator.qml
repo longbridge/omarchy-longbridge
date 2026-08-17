@@ -3,18 +3,18 @@ import qs.Commons
 
 // Streaming state for a tab. There is no refresh control to replace it with:
 // the panel either has a live subscription or it says why it does not, and
-// both answers are readable at a glance. Theme-neutral by rule — red and green
-// belong to rise and fall alone.
+// both answers are readable at a glance. Its state color follows the active
+// theme rather than introducing a plugin-specific palette.
 Row {
   id: root
 
   required property color textColor
+  required property color liveColor
   required property string panelFontFamily
   property bool live: false
   property bool connecting: false
-  // Green reads as "streaming" at a glance, the way it does everywhere else a
-  // feed is running; the label carries the state for anyone who cannot use it.
-  property color liveColor: "#63d297"
+  // The theme's market green reads as "active" at a glance; the label carries
+  // the state for anyone who cannot distinguish it by color.
   property string label: root.live ? "LIVE" : (root.connecting ? "CONNECTING" : "OFFLINE")
 
   spacing: Style.space(5)
@@ -30,12 +30,6 @@ Row {
       ? root.liveColor
       : Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.30)
 
-    SequentialAnimation on opacity {
-      running: root.live || root.connecting
-      loops: Animation.Infinite
-      NumberAnimation { from: 1.0; to: 0.35; duration: root.live ? 1400 : 700; easing.type: Easing.InOutQuad }
-      NumberAnimation { from: 0.35; to: 1.0; duration: root.live ? 1400 : 700; easing.type: Easing.InOutQuad }
-    }
   }
 
   Text {

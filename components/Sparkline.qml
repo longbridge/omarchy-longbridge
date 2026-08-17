@@ -9,8 +9,8 @@ Canvas {
 
   property var series: null
   property real previousClose: 0
-  property color lineColor: "#63d297"
-  property color guideColor: "#808080"
+  required property color lineColor
+  required property color guideColor
   readonly property bool hasSeries: series && series.points && series.points.length > 1
 
   opacity: hasSeries ? 1 : 0

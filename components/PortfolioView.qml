@@ -11,6 +11,8 @@ Column {
   required property color textColor
   required property color accentColor
   required property color warningColor
+  required property color gainColor
+  required property color lossColor
   required property string panelFontFamily
   property bool loading: false
   property string bridgeMessage: ""
@@ -22,8 +24,6 @@ Column {
   readonly property color dimColor: Qt.rgba(textColor.r, textColor.g, textColor.b, 0.58)
   readonly property real dayGain: Number(portfolio.dayGainValue || 0)
   readonly property real totalGain: Number(portfolio.totalGainValue || 0)
-  readonly property color gainColor: "#63d297"
-  readonly property color lossColor: "#ff6b7a"
   readonly property color trendColor: dayGain < 0 ? lossColor : gainColor
   readonly property var allocation: PortfolioModel.allocation(portfolio)
   // Keyed by symbol for the same reason as the watchlist: the positions array
@@ -66,24 +66,23 @@ Column {
 
   function alpha(color, opacity) { return Qt.rgba(color.r, color.g, color.b, opacity) }
   function gainLossColor(value) { return Number(value || 0) < 0 ? root.lossColor : root.gainColor }
-  // Risk reads like a warning light: safe green, danger red, the two steps
-  // between them amber. The only place in this panel where those colours mean
-  // something other than rise and fall — and the label says which it is.
+  // Risk uses the theme's accent for safe and warning role for elevated risk;
+  // the label carries the exact level without relying on color alone.
   function riskColor(level) {
     var value = Number(level)
     if (value === 0) return root.gainColor
-    if (value === 1 || value === 2) return "#f0b072"
+    if (value === 1 || value === 2) return root.warningColor
     if (value === 3) return root.lossColor
     return root.textColor
   }
 
   function allocationColor(label, index) {
-    if (label === "US") return "#6aa9f4"
-    if (label === "HK") return "#c792ea"
-    if (label === "CN") return "#f0b072"
-    if (label === "SG") return "#5ec8c4"
+    if (label === "US") return root.accentColor
+    if (label === "HK") return root.warningColor
+    if (label === "CN") return root.alpha(root.accentColor, 0.72)
+    if (label === "SG") return root.alpha(root.warningColor, 0.72)
     if (label === "CASH") return root.alpha(root.textColor, 0.35)
-    var spare = ["#9aa7f2", "#d2a0c8", "#8fb9a8", "#b7a6f0"]
+    var spare = [root.accentColor, root.warningColor, root.textColor]
     return spare[index % spare.length]
   }
   function signedPercent(value) {
@@ -127,6 +126,7 @@ Column {
       id: liveIndicator
       anchors.verticalCenter: parent.verticalCenter
       textColor: root.textColor
+      liveColor: root.gainColor
       panelFontFamily: root.panelFontFamily
       live: root.live
       connecting: root.connecting
@@ -268,6 +268,8 @@ Column {
         required property int index
         holding: root.holdingFor(modelData)
         textColor: root.textColor
+        gainColor: root.gainColor
+        lossColor: root.lossColor
         panelFontFamily: root.panelFontFamily
         selected: index === root.selectedIndex
         onActivated: {

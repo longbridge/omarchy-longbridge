@@ -2,7 +2,7 @@ import QtQuick
 
 Item {
   id: root
-  property color foregroundColor: "#ffffff"
+  required property color foregroundColor
   property bool brandColors: false
   readonly property real scaleUnit: Math.min(width, height) / 69
   readonly property real offsetX: (width - 69 * scaleUnit) / 2

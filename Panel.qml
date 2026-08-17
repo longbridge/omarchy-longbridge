@@ -26,6 +26,12 @@ Panel {
   property bool setupGuideOpen: false
   property double nowMs: Date.now()
 
+  ThemePalette {
+    id: themePalette
+    fallbackGreen: Color.accent
+    fallbackRed: root.urgent
+  }
+
   function moveSelection(delta) {
     if (activeTab === 0) {
       watchlistView.moveSelection(delta)
@@ -196,6 +202,7 @@ Panel {
           LongbridgeLogoFull {
             id: headerIdentity
             anchors.left: parent.left
+            anchors.leftMargin: 1
             anchors.right: tabSegments.left
             anchors.rightMargin: Style.space(9)
             anchors.verticalCenter: tabSegments.verticalCenter
@@ -275,6 +282,10 @@ Panel {
           live: watchlistService.live
           connecting: session.status === "starting"
           textColor: root.foreground
+          accentColor: Color.accent
+          urgentColor: root.urgent
+          gainColor: themePalette.green
+          lossColor: themePalette.red
           panelFontFamily: root.fontFamily
           onGroupSelected: function(groupId) { watchlistService.selectGroup(groupId) }
           onChartRequested: function(symbol) { watchlistService.requestChart(symbol) }
@@ -290,6 +301,8 @@ Panel {
           textColor: root.foreground
           accentColor: Color.accent
           warningColor: root.urgent
+          gainColor: themePalette.green
+          lossColor: themePalette.red
           panelFontFamily: root.fontFamily
           live: portfolioService.live
           connecting: session.status === "starting"

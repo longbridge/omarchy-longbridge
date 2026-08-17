@@ -7,6 +7,8 @@ Rectangle {
 
   required property var holding
   required property color textColor
+  required property color gainColor
+  required property color lossColor
   required property string panelFontFamily
   property bool selected: false
   signal activated()
@@ -14,8 +16,6 @@ Rectangle {
   readonly property color dimColor: Qt.rgba(textColor.r, textColor.g, textColor.b, 0.56)
   readonly property real dayGain: Number(holding.day_gain || 0)
   readonly property real dayPercent: PortfolioModel.intradayPercent(holding)
-  readonly property color gainColor: "#63d297"
-  readonly property color lossColor: "#ff6b7a"
 
   // "25 @ 430.16" — the quantity held and what it cost, the terminal's Qty and
   // Cost columns in the room a 44-unit row can spare.

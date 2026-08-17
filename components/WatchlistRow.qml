@@ -7,6 +7,8 @@ Rectangle {
 
   required property var quote
   required property color textColor
+  required property color gainColor
+  required property color lossColor
   required property string panelFontFamily
   property bool selected: false
   property bool stale: false
@@ -17,8 +19,6 @@ Rectangle {
   readonly property real lastValue: Number(quote.last || 0)
   readonly property real previousValue: Number(quote.prev_close || 0)
   readonly property real changePercent: previousValue === 0 ? 0 : (lastValue - previousValue) / previousValue * 100
-  readonly property color gainColor: "#63d297"
-  readonly property color lossColor: "#ff6b7a"
   readonly property color movementColor: changePercent < 0 ? lossColor : gainColor
 
   width: ListView.view ? ListView.view.width : implicitWidth

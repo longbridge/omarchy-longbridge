@@ -2,6 +2,7 @@ QMLLINT := /usr/lib/qt6/bin/qmllint
 QMLTESTRUNNER := /usr/lib/qt6/bin/qmltestrunner
 SMOKE_SECONDS := 15
 QML_FILES := Panel.qml LongbridgeRpc.qml QuoteFeed.qml WatchlistService.qml PortfolioService.qml \
+	ThemePalette.qml \
 	components/LongbridgeSetup.qml \
 	components/LiveIndicator.qml \
 	components/Sparkline.qml \
