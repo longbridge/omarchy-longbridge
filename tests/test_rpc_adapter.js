@@ -64,6 +64,9 @@ assert.strictEqual(
 
 const info = context.parseStaticInfo(fixture("rpc_static_info.json"))
 assert.strictEqual(info["AAPL.US"].currency, "USD")
+assert.strictEqual(info["AAPL.US"].complete, true)
+// An entry cached before fundamentals existed is refetched, not trusted.
+assert.deepStrictEqual(plain(context.missingSymbols(["AAPL.US"], { "AAPL.US": { currency: "USD", lot_size: 1 } })), ["AAPL.US"])
 assert.strictEqual(info["700.HK"].lot_size, 100)
 assert.deepStrictEqual(plain(context.parseStaticInfo(null)), {})
 

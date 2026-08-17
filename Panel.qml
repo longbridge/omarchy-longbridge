@@ -196,39 +196,32 @@ Panel {
             id: headerLogo
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            width: Style.space(24)
+            // Sized off the wordmark it sits beside, so the mark reads as one
+            // line of type rather than a badge next to it.
+            width: Math.round(headerIdentityText.font.pixelSize * 1.15)
             height: width
             foregroundColor: root.foreground
             brandColors: true
           }
-          Column {
+          // Just the wordmark, centred on the mark. The subtitle said nothing
+          // the two tabs beside it do not.
+          Text {
             id: headerIdentityText
             anchors.left: headerLogo.right
             anchors.leftMargin: Style.space(8)
             anchors.right: tabSegments.left
             anchors.rightMargin: Style.space(9)
-            // Sits on the logo's baseline rather than the row's middle, so the
-            // second line ends where the mark does.
+            // Bottom-aligned with the mark: the wordmark's descenders sit a
+            // little below its baseline, so the box is nudged down to put the
+            // letters, not the box, on the logo's edge.
             anchors.bottom: headerLogo.bottom
             anchors.bottomMargin: -Style.space(2)
-            spacing: Style.space(1)
-            Text {
-              width: parent.width
-              text: "Longbridge"
-              color: root.foreground
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.title
-              font.bold: true
-              elide: Text.ElideRight
-            }
-            Text {
-              width: parent.width
-              text: "Markets & Portfolio"
-              color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.55)
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.caption
-              elide: Text.ElideRight
-            }
+            text: "Longbridge"
+            color: root.foreground
+            font.family: root.fontFamily
+            font.pixelSize: Style.font.title
+            font.bold: true
+            elide: Text.ElideRight
           }
           PanelMenu {
             id: panelMenu

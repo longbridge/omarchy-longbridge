@@ -26,9 +26,9 @@ grep -F 'WatchlistService {' Panel.qml >/dev/null
 ! grep -F 'QuoteService {' Panel.qml
 grep -F 'id: panelHeader' Panel.qml >/dev/null
 grep -F 'implicitHeight: Style.space(32)' Panel.qml >/dev/null
-grep -F 'width: Style.space(24)' Panel.qml >/dev/null
+grep -F 'width: Math.round(headerIdentityText.font.pixelSize * 1.15)' Panel.qml >/dev/null
 grep -F 'id: headerIdentityText' Panel.qml >/dev/null
-grep -F 'text: "Markets & Portfolio"' Panel.qml >/dev/null
+! grep -F 'text: "Markets & Portfolio"' Panel.qml
 grep -F 'property bool setupGuideOpen: false' Panel.qml >/dev/null
 grep -F 'onInstallCliRequested: root.setupGuideOpen = true' Panel.qml >/dev/null
 grep -F 'anchors.verticalCenter: parent.verticalCenter' Panel.qml >/dev/null

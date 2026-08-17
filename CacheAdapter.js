@@ -105,6 +105,7 @@ function staticInfoPayload(info, kept) {
     if (!kept[symbol] || !info[symbol]) continue
     var row = info[symbol]
     result[symbol] = {
+      complete: row.complete === true,
       currency: String(row.currency || ""),
       lot_size: Number(row.lot_size || 0),
       eps_ttm: String(row.eps_ttm || ""),

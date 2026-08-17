@@ -105,20 +105,18 @@ Column {
     }
   }
 
-  // Same intraday series the row draws, given the room to be read.
-  Rectangle {
+  // Same intraday series the row draws, given the room to be read. No frame:
+  // the line and its baseline are the only marks this needs.
+  Item {
     width: parent.width
     height: Style.space(96)
     visible: detailChart.hasSeries
-    color: Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.03)
-    border.width: 1
-    border.color: Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.10)
-    radius: Style.cornerRadius
 
     Sparkline {
       id: detailChart
       anchors.fill: parent
-      anchors.margins: Style.space(8)
+      anchors.topMargin: Style.space(4)
+      anchors.bottomMargin: Style.space(4)
       series: root.quote && root.quote.series ? root.quote.series : null
       previousClose: Number(root.quote && root.quote.prev_close || 0)
       lineColor: root.movementColor

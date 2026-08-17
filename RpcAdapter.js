@@ -123,6 +123,10 @@ function parseStaticInfo(result) {
     var source = result[i]
     if (!source || typeof source !== "object" || !source.symbol) continue
     info[String(source.symbol)] = {
+      // Marks an entry as carrying the fundamentals below. Entries cached
+      // before they were fetched lack it, and missingSymbols() sends those
+      // symbols back to the server instead of leaving the detail view blank.
+      complete: true,
       currency: String(source.currency || ""),
       lot_size: Number(source.lot_size || 0),
       eps_ttm: String(source.eps_ttm || source.eps || ""),
@@ -295,7 +299,10 @@ function missingSymbols(symbols, info) {
   var known = info || {}
   var result = []
   var source = symbolList(symbols)
-  for (var i = 0; i < source.length; i++) if (!known[source[i]]) result.push(source[i])
+  for (var i = 0; i < source.length; i++) {
+    var entry = known[source[i]]
+    if (!entry || !entry.complete) result.push(source[i])
+  }
   return result
 }
 
