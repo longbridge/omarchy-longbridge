@@ -1,0 +1,34 @@
+[
+  {
+    "id": "2630",
+    "name": "all",
+    "securities": [
+      {
+        "symbol": "AAPL.US",
+        "market": "US",
+        "name": "Apple",
+        "watched_price": "220.15",
+        "watched_at": "2026-03-03T04:48:54Z",
+        "is_pinned": true
+      },
+      {
+        "symbol": "700.HK",
+        "market": "HK",
+        "name": "TENCENT",
+        "watched_price": "448.20",
+        "watched_at": "2026-04-01T02:10:00Z",
+        "is_pinned": false
+      }
+    ]
+  },
+  {
+    "id": "-6",
+    "name": "holdings",
+    "securities": []
+  },
+  {
+    "id": "3001",
+    "name": "us",
+    "securities": null
+  }
+]

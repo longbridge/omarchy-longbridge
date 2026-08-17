@@ -6,6 +6,10 @@ plugin_id="longbridge.omarchy"
 config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
 plugin_home="$config_home/omarchy/plugins"
 install_path="$plugin_home/$plugin_id"
+# Backups must live outside the plugins directory. Omarchy scans every
+# subdirectory of it for a manifest, so a backup left alongside the install is a
+# second plugin with the same id — and the shell then loads the stale copy.
+backup_home="$config_home/omarchy/plugin-backups"
 restart_shell=true
 
 usage() {
@@ -46,7 +50,8 @@ mkdir -p "$plugin_home"
 if [[ -L "$install_path" && "$(readlink -f "$install_path")" == "$project_dir" ]]; then
   :
 elif [[ -e "$install_path" || -L "$install_path" ]]; then
-  backup_path="$install_path.bak.$(date +%Y%m%d%H%M%S)"
+  mkdir -p "$backup_home"
+  backup_path="$backup_home/$plugin_id.bak.$(date +%Y%m%d%H%M%S)"
   mv "$install_path" "$backup_path"
   printf 'Backed up the previous install to %s\n' "$backup_path"
   ln -s "$project_dir" "$install_path"

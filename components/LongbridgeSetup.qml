@@ -58,40 +58,31 @@ Column {
 
   onPanelOpenChanged: if (panelOpen && setupState === "idle") Qt.callLater(checkAvailability)
 
-  Item {
+  // The mark, the name, and what the panel is doing — centred, because there is
+  // nothing else on screen yet to align to.
+  Column {
     width: parent.width
-    implicitHeight: Style.space(54)
+    spacing: Style.space(6)
+    topPadding: Style.space(10)
 
-    LongbridgeLogo {
-      anchors.left: parent.left
-      anchors.verticalCenter: parent.verticalCenter
-      width: Style.space(28)
-      height: width
-      foregroundColor: root.textColor
-      brandColors: true
+    LongbridgeLogoFull {
+      anchors.horizontalCenter: parent.horizontalCenter
+      foreground: root.textColor
+      fontFamily: root.panelFontFamily
+      markSize: Style.space(34)
+      fontSize: Style.font.display
+      gap: Style.space(10)
+      width: implicitWidth
     }
 
-    Column {
-      anchors.left: parent.left
-      anchors.leftMargin: Style.space(40)
-      anchors.right: parent.right
-      anchors.verticalCenter: parent.verticalCenter
-      spacing: Style.space(2)
-      Text {
-        text: "Welcome to Longbridge"
-        color: root.textColor
-        font.family: root.panelFontFamily
-        font.pixelSize: Style.font.title
-        font.bold: true
-      }
-      Text {
-        width: parent.width
-        text: "Connect Longbridge Terminal to continue."
-        color: Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.58)
-        font.family: root.panelFontFamily
-        font.pixelSize: Style.font.caption
-        wrapMode: Text.Wrap
-      }
+    Text {
+      width: parent.width
+      horizontalAlignment: Text.AlignHCenter
+      text: root.message
+      color: Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.62)
+      font.family: root.panelFontFamily
+      font.pixelSize: Style.font.bodySmall
+      wrapMode: Text.Wrap
     }
   }
 
@@ -129,14 +120,6 @@ Column {
         font.family: root.panelFontFamily
         font.pixelSize: Style.font.caption
         wrapMode: Text.WrapAnywhere
-      }
-      Text {
-        width: parent.width
-        text: root.message
-        color: Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.68)
-        font.family: root.panelFontFamily
-        font.pixelSize: Style.font.bodySmall
-        wrapMode: Text.Wrap
       }
       Button {
         visible: root.showingInstall

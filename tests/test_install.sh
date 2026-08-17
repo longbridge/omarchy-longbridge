@@ -37,6 +37,26 @@ make_fake longbridge 'exit 0'
 install_path="$XDG_CONFIG_HOME/omarchy/plugins/longbridge.omarchy"
 [[ -L "$install_path" ]]
 [[ "$(readlink -f "$install_path")" == "$repo_root" ]]
+
+# A previous non-symlink install must be moved OUT of the plugins directory.
+# Omarchy scans every subdirectory there for a manifest, so a backup left
+# beside the install registers a second plugin with the same id and the shell
+# loads the stale copy instead of this checkout.
+rm "$install_path"
+mkdir -p "$install_path"
+printf '%s
+' '{"schemaVersion":1,"id":"longbridge.omarchy"}' >"$install_path/manifest.json"
+"$repo_root/install.sh" --no-restart >"$test_root/backup.out"
+grep -F 'Backed up the previous install to' "$test_root/backup.out" >/dev/null
+[[ -L "$install_path" ]]
+[[ "$(readlink -f "$install_path")" == "$repo_root" ]]
+shopt -s nullglob
+leftovers=("$XDG_CONFIG_HOME/omarchy/plugins"/*.bak.*)
+shopt -u nullglob
+[[ ${#leftovers[@]} -eq 0 ]]
+backups=("$XDG_CONFIG_HOME/omarchy/plugin-backups"/longbridge.omarchy.bak.*)
+[[ ${#backups[@]} -eq 1 ]]
+[[ -f "${backups[0]}/manifest.json" ]]
 [[ ! -e "$repo_root/longbridge-quotes" ]]
 [[ ! -e "$repo_root/QuoteAdapter.js" ]]
 [[ ! -e "$repo_root/QuoteService.qml" ]]

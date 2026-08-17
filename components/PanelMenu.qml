@@ -61,10 +61,23 @@ Item {
     }
     contentItem: Column {
       id: menuItems
-      MenuRow { text: "Install CLI"; onActivated: root.showInstallGuide() }
+      spacing: Style.space(2)
       MenuRow { text: "Longbridge"; onActivated: root.openLongbridge() }
       MenuRow { text: "Longbridge CLI"; onActivated: root.openCliDocs() }
       MenuRow { text: "GitHub"; onActivated: root.openGitHub() }
+
+      // Links above, the thing that changes this machine below.
+      Item {
+        width: menu.width - menu.leftPadding - menu.rightPadding
+        implicitHeight: Style.space(7)
+        PanelSeparator {
+          anchors.verticalCenter: parent.verticalCenter
+          width: parent.width
+          foreground: root.textColor
+        }
+      }
+
+      MenuRow { text: "Install CLI"; onActivated: root.showInstallGuide() }
     }
   }
 

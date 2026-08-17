@@ -26,17 +26,39 @@ Panel {
   property bool setupGuideOpen: false
   property double nowMs: Date.now()
 
+  ThemePalette {
+    id: themePalette
+    fallbackGreen: Color.accent
+    fallbackRed: root.urgent
+  }
+
   function moveSelection(delta) {
     if (activeTab === 0) {
-      watchlistView.selectedIndex = Math.max(0, Math.min(quoteRows.length - 1, watchlistView.selectedIndex + delta))
+      watchlistView.moveSelection(delta)
     } else {
       var count = (portfolioState.positions || []).length
       portfolioView.selectedIndex = Math.max(0, Math.min(count - 1, portfolioView.selectedIndex + delta))
     }
   }
 
+  // One `longbridge serve` session and one push feed for the whole panel: the
+  // watchlist and the portfolio register the symbols they show and are fed by
+  // the same subscription. Nothing in the panel polls for prices.
+  LongbridgeRpc {
+    id: session
+    serving: root.opened && setup.ready
+  }
+
+  QuoteFeed {
+    id: feed
+    session: session
+    active: root.opened
+  }
+
   WatchlistService {
     id: watchlistService
+    session: session
+    feed: feed
     panelOpen: root.opened && setup.ready
     active: root.activeTab === 0
     onGroupsEvent: function(groups, defaultGroupId) {
@@ -50,6 +72,7 @@ Panel {
 
   PortfolioService {
     id: portfolioService
+    feed: feed
     panelOpen: root.opened && setup.ready
     active: root.activeTab === 1
     onPortfolioEvent: function(event) { root.portfolioState = PortfolioModel.applyEvent(root.portfolioState, event) }
@@ -77,7 +100,11 @@ Panel {
         setup: setup.setupState,
         tab: root.activeTab === 0 ? "watchlist" : "portfolio",
         watchlist: watchlistService.watchlistState,
-        group: watchlistService.activeGroupId
+        group: watchlistService.activeGroupId,
+        session: session.status,
+        live: feed.live,
+        subscribed: feed.symbolCount,
+        charts: Object.keys(watchlistService.charts).length
       })
     }
   }
@@ -115,19 +142,23 @@ Panel {
     centerOnBar: false
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(Style.space(390))
-    contentHeight: panel.fittedContentHeight(contentColumn.implicitHeight, Style.space(620))
+    contentHeight: panel.fittedContentHeight(contentColumn.implicitHeight, Style.space(700))
 
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
+      // The watchlist filter is an inline editor: while it holds focus every
+      // key belongs to it, including the panel's single-letter shortcuts.
+      blocked: root.activeTab === 0 && watchlistView.searching
       onMoveRequested: function(dx, dy) { if (dy !== 0 && setup.ready) root.moveSelection(dy) }
       onActivateRequested: {
         if (!setup.ready) return
-        if (root.activeTab === 0 && root.quoteRows.length > 0) watchlistView.detailOpen = true
+        if (root.activeTab === 0 && watchlistView.visibleRows.length > 0) watchlistView.detailOpen = true
         else if (root.activeTab === 1 && root.portfolioState.positions.length > 0) portfolioView.detailOpen = true
       }
       onCloseRequested: {
-        if (watchlistView.detailOpen) watchlistView.detailOpen = false
+        if (root.activeTab === 0 && watchlistView.filterText !== "") watchlistView.clearSearch()
+        else if (watchlistView.detailOpen) watchlistView.detailOpen = false
         else if (portfolioView.detailOpen) portfolioView.detailOpen = false
         else root.close()
       }
@@ -135,7 +166,8 @@ Panel {
       onTextKey: function(text) {
         if (!setup.ready) return
         var key = String(text || "").toLowerCase()
-        if (key === "r" && root.activeTab === 0) watchlistService.refresh()
+        if ((key === "/" || key === "f") && root.activeTab === 0) watchlistView.focusSearch()
+        else if (key === "r" && root.activeTab === 0) watchlistService.refresh()
         else if (key === "r") portfolioService.refresh()
         else if (key === "w" || key === "m") root.activeTab = 0
         else if (key === "p") root.activeTab = 1
@@ -166,41 +198,18 @@ Panel {
           width: parent.width
           implicitHeight: Style.space(32)
 
-          LongbridgeLogo {
-            id: headerLogo
+          // Mark and wordmark as one lockup, centred on the tab strip opposite.
+          LongbridgeLogoFull {
+            id: headerIdentity
             anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            width: Style.space(24)
-            height: width
-            foregroundColor: root.foreground
-            brandColors: true
-          }
-          Column {
-            id: headerIdentityText
-            anchors.left: headerLogo.right
-            anchors.leftMargin: Style.space(8)
-            anchors.right: panelMenu.left
+            anchors.leftMargin: 1
+            anchors.right: tabSegments.left
             anchors.rightMargin: Style.space(9)
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: Style.space(1)
-            Text {
-              width: parent.width
-              text: "Longbridge"
-              color: root.foreground
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.body
-              font.bold: true
-              elide: Text.ElideRight
-            }
-            Text {
-              width: parent.width
-              text: "Markets & Portfolio"
-              color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.55)
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.caption
-              elide: Text.ElideRight
-            }
+            anchors.verticalCenter: tabSegments.verticalCenter
+            foreground: root.foreground
+            fontFamily: root.fontFamily
           }
+
           PanelMenu {
             id: panelMenu
             anchors.right: parent.right
@@ -209,46 +218,52 @@ Panel {
             panelFontFamily: root.fontFamily
             onInstallCliRequested: root.setupGuideOpen = true
           }
-        }
 
-        Rectangle {
-          id: tabSegments
-          visible: setup.ready && !root.setupGuideOpen
-          width: Style.space(190)
-          implicitHeight: Style.space(28)
-          radius: 0
-          color: "transparent"
-          border.width: 1
-          border.color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.18)
-          Row {
-            anchors.fill: parent
-            Repeater {
-              model: ["Watchlist", "Portfolio"]
-              Rectangle {
-                required property string modelData
-                required property int index
-                width: tabSegments.width / 2
-                height: tabSegments.height
-                radius: 0
-                color: index === root.activeTab
-                  ? Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
-                  : "transparent"
+          // The tabs ride in the header rather than owning a row of their own,
+          // which buys the list a row of height in a panel this short.
+          Rectangle {
+            id: tabSegments
+            anchors.right: panelMenu.left
+            anchors.rightMargin: Style.space(8)
+            anchors.verticalCenter: parent.verticalCenter
+            width: Style.space(150)
+            // Same height as the menu button beside it, so the header reads as
+            // one row of controls rather than two sizes.
+            height: panelMenu.height
+            radius: 0
+            color: "transparent"
+            border.width: 1
+            border.color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.18)
+            Row {
+              anchors.fill: parent
+              Repeater {
+                model: ["Watchlist", "Portfolio"]
                 Rectangle {
-                  visible: index === 1
-                  anchors.left: parent.left
-                  width: 1
-                  height: parent.height
-                  color: tabSegments.border.color
+                  required property string modelData
+                  required property int index
+                  width: tabSegments.width / 2
+                  height: tabSegments.height
+                  radius: 0
+                  color: index === root.activeTab
+                    ? Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
+                    : "transparent"
+                  Rectangle {
+                    visible: index === 1
+                    anchors.left: parent.left
+                    width: 1
+                    height: parent.height
+                    color: tabSegments.border.color
+                  }
+                  Text {
+                    anchors.centerIn: parent
+                    text: modelData
+                    color: root.foreground
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.caption
+                    font.bold: index === root.activeTab
+                  }
+                  TapHandler { onTapped: root.activeTab = index }
                 }
-                Text {
-                  anchors.centerIn: parent
-                  text: modelData
-                  color: root.foreground
-                  font.family: root.fontFamily
-                  font.pixelSize: Style.font.caption
-                  font.bold: index === root.activeTab
-                }
-                TapHandler { onTapped: root.activeTab = index }
               }
             }
           }
@@ -264,10 +279,16 @@ Panel {
           loading: watchlistService.loading
           message: watchlistService.message
           nowMs: root.nowMs
+          live: watchlistService.live
+          connecting: session.status === "starting"
           textColor: root.foreground
+          accentColor: Color.accent
+          urgentColor: root.urgent
+          gainColor: themePalette.green
+          lossColor: themePalette.red
           panelFontFamily: root.fontFamily
           onGroupSelected: function(groupId) { watchlistService.selectGroup(groupId) }
-          onRefreshRequested: watchlistService.refresh()
+          onChartRequested: function(symbol) { watchlistService.requestChart(symbol) }
         }
 
         PortfolioView {
@@ -280,8 +301,11 @@ Panel {
           textColor: root.foreground
           accentColor: Color.accent
           warningColor: root.urgent
+          gainColor: themePalette.green
+          lossColor: themePalette.red
           panelFontFamily: root.fontFamily
-          onRefreshRequested: portfolioService.refresh()
+          live: portfolioService.live
+          connecting: session.status === "starting"
         }
       }
     }

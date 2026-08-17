@@ -1,0 +1,28 @@
+[
+  {
+    "symbol": "AAPL.US",
+    "name_cn": "苹果",
+    "name_en": "Apple",
+    "name_hk": "蘋果",
+    "exchange": "NASDAQ",
+    "currency": "USD",
+    "lot_size": 1,
+    "total_shares": 15204137000,
+    "circulating_shares": 15204137000,
+    "eps": "6.570",
+    "board": "USMain"
+  },
+  {
+    "symbol": "700.HK",
+    "name_cn": "腾讯控股",
+    "name_en": "TENCENT",
+    "name_hk": "騰訊控股",
+    "exchange": "HKEX",
+    "currency": "HKD",
+    "lot_size": 100,
+    "total_shares": 9174000000,
+    "circulating_shares": 9174000000,
+    "eps": "22.100",
+    "board": "HKEquity"
+  }
+]

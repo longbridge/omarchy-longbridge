@@ -1,0 +1,53 @@
+[
+  {
+    "symbol": "AAPL.US",
+    "last_done": "233.010",
+    "prev_close": "232.100",
+    "open": "232.500",
+    "high": "234.400",
+    "low": "231.900",
+    "timestamp": "2026-08-14T20:00:00Z",
+    "volume": 31367913,
+    "turnover": "7300000000.000",
+    "trade_status": "Normal",
+    "pre_market_quote": {
+      "last_done": "232.800",
+      "timestamp": "2026-08-14T13:30:00Z",
+      "volume": 171329,
+      "turnover": "39880000.000",
+      "high": "233.100",
+      "low": "232.400",
+      "prev_close": "232.100"
+    },
+    "post_market_quote": {
+      "last_done": "233.400",
+      "timestamp": "2026-08-14T23:59:45Z",
+      "volume": 5030282,
+      "turnover": "1173000000.000",
+      "high": "233.600",
+      "low": "232.900",
+      "prev_close": "233.010"
+    },
+    "overnight_quote": {
+      "last_done": "233.900",
+      "timestamp": "2026-08-17T07:33:52Z",
+      "volume": 59393,
+      "turnover": "13890000.000",
+      "high": "234.000",
+      "low": "233.200",
+      "prev_close": "233.010"
+    }
+  },
+  {
+    "symbol": "700.HK",
+    "last_done": "448.400",
+    "prev_close": "444.800",
+    "open": "444.800",
+    "high": "450.400",
+    "low": "442.600",
+    "timestamp": "2026-08-17T08:10:00Z",
+    "volume": 1741451,
+    "turnover": "780000000.000",
+    "trade_status": "Normal"
+  }
+]
