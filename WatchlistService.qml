@@ -306,6 +306,25 @@ Item {
     if (watchlistState === "idle") watchlistState = "ready"
   }
 
+  // `longbridge auth login` may have switched accounts. Everything held here —
+  // groups, prices, charts, and the file they are cached in — belongs to the
+  // previous one, so it goes rather than lingering behind the new session.
+  function resetForAccount() {
+    groups = []
+    defaultGroupId = ""
+    activeGroupId = ""
+    staticInfo = ({})
+    quoteCache = ({})
+    charts = ({})
+    chartWanted = []
+    cacheDirty = false
+    watchlistState = "idle"
+    message = ""
+    if (cacheReady) cacheFile.setText("")
+    quoteEvent({ type: "reset" })
+    if (panelOpen && active) Qt.callLater(refresh)
+  }
+
   function saveCache() {
     // Writing before the first read completes would clobber the cache with an
     // empty panel.
@@ -405,6 +424,7 @@ Item {
       root.drainCharts()
       if (root.panelOpen && root.active && root.inflight === 0) Qt.callLater(root.refresh)
     }
+    function onAuthChanged() { root.resetForAccount() }
     function onFailed(code, text) {
       root.watchlistState = "error"
       root.message = text

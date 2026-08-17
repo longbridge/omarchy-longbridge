@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import "CliAdapter.js" as CliAdapter
 import "RpcAdapter.js" as RpcAdapter
@@ -26,6 +27,9 @@ Item {
   signal connected()
   signal notified(string method, var params)
   signal failed(string code, string message)
+  // The CLI re-wrote its credential store: `longbridge auth login` may have
+  // switched accounts, and a running server holds whoever it authenticated as.
+  signal authChanged()
 
   property var pending: ({})
   property var outbox: []
@@ -131,6 +135,22 @@ Item {
   }
 
   property int initializeId: 0
+  property bool reauthenticating: false
+
+  // The session authenticates once at process start, so a new login only takes
+  // effect after a restart — the panel would otherwise keep serving the
+  // previous account until the linger window expired.
+  function reauthenticate() {
+    lingerTimer.stop()
+    attempts = 0
+    authChanged()
+    if (!serve.running) {
+      if (serving) start()
+      return
+    }
+    reauthenticating = true
+    serve.running = false
+  }
 
   onServingChanged: {
     if (serving) {
@@ -159,6 +179,12 @@ Item {
     onExited: function(exitCode) {
       var failure = CliAdapter.classifyFailure(root.lastError, exitCode)
       root.failPending(failure.code, failure.message)
+      if (root.reauthenticating) {
+        root.reauthenticating = false
+        if (root.serving) root.start()
+        else root.status = "idle"
+        return
+      }
       if (!root.serving) {
         root.status = "idle"
         return
@@ -181,6 +207,23 @@ Item {
     id: restartTimer
     repeat: false
     onTriggered: root.start()
+  }
+
+  FileView {
+    id: authFile
+    path: Quickshell.env("HOME") + "/.longbridge/openapi/cli-auth"
+    watchChanges: true
+    printErrors: false
+    // Token refreshes rewrite this file too, so a short debounce keeps a burst
+    // of writes from restarting the session repeatedly.
+    onFileChanged: authDebounce.restart()
+  }
+
+  Timer {
+    id: authDebounce
+    interval: 1500
+    repeat: false
+    onTriggered: root.reauthenticate()
   }
 
   Timer {

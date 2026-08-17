@@ -124,7 +124,13 @@ function parseStaticInfo(result) {
     if (!source || typeof source !== "object" || !source.symbol) continue
     info[String(source.symbol)] = {
       currency: String(source.currency || ""),
-      lot_size: Number(source.lot_size || 0)
+      lot_size: Number(source.lot_size || 0),
+      eps_ttm: String(source.eps_ttm || source.eps || ""),
+      bps: String(source.bps || ""),
+      dividend_yield: String(source.dividend_yield || ""),
+      total_shares: String(source.total_shares || ""),
+      circulating_shares: String(source.circulating_shares || ""),
+      exchange: String(source.exchange || "")
     }
   }
   return info
@@ -151,6 +157,13 @@ function parseQuote(source, info) {
     symbol: symbol,
     name: String(meta.name || ""),
     currency: String(meta.currency || ""),
+    lot_size: String(meta.lot_size || ""),
+    eps_ttm: String(meta.eps_ttm || ""),
+    bps: String(meta.bps || ""),
+    dividend_yield: String(meta.dividend_yield || ""),
+    total_shares: String(meta.total_shares || ""),
+    circulating_shares: String(meta.circulating_shares || ""),
+    exchange: String(meta.exchange || ""),
     last: String(active.last_done || source.last_done || "0"),
     prev_close: String(active.prev_close || source.prev_close || "0"),
     open: String(source.open || "0"),

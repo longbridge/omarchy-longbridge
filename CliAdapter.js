@@ -49,6 +49,16 @@ function parsePortfolio(text) {
       day_gain: ((last - previous) * quantity).toFixed(2)
     })
   }
+  // Per-market market value, for the allocation bar. Cash is added by the view,
+  // which already knows the report currency total.
+  var markets = []
+  var accounts = source.market_accounts || {}
+  for (var key in accounts) {
+    var account = accounts[key] || {}
+    var value = number(account.market_value)
+    if (value > 0) markets.push({ market: String(account.market || key), value: value.toFixed(2) })
+  }
+
   return {
     ok: true,
     event: {
@@ -59,6 +69,11 @@ function parsePortfolio(text) {
       total_cash: String(overview.total_cash || "0"),
       total_gain: String(overview.total_pl || "0"),
       day_gain: String(overview.total_today_pl || "0"),
+      margin_call: String(overview.margin_call || "0"),
+      risk_level: String(overview.risk_level === undefined ? "" : overview.risk_level),
+      credit_limit: String(overview.credit_limit || "0"),
+      fund_market_value: String(overview.fund_market_value || "0"),
+      markets: markets,
       positions: positions,
       cash_balances: source.cash_balances || [],
       updated_at: Math.floor(Date.now() / 1000)

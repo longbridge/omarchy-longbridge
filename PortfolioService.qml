@@ -60,6 +60,13 @@ Item {
     function onConnected() {
       if (root.panelOpen && root.active) Qt.callLater(root.refresh)
     }
+    // Positions, cash and P/L all belong to the account that just went away.
+    function onAuthChanged() {
+      root.symbols = []
+      if (root.feed) root.feed.release("portfolio")
+      root.portfolioEvent({ type: "reset" })
+      if (root.panelOpen && root.active) Qt.callLater(root.refresh)
+    }
   }
 
   Process {

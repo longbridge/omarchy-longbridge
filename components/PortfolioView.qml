@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import qs.Commons
 import qs.Ui
+import "../PortfolioModel.js" as PortfolioModel
 
 Column {
   id: root
@@ -24,14 +25,71 @@ Column {
   readonly property color gainColor: "#63d297"
   readonly property color lossColor: "#ff6b7a"
   readonly property color trendColor: dayGain < 0 ? lossColor : gainColor
-  readonly property var selectedHolding: (portfolio.positions || []).length > 0
-    ? portfolio.positions[Math.max(0, Math.min(selectedIndex, portfolio.positions.length - 1))] : null
+  readonly property var allocation: PortfolioModel.allocation(portfolio)
+  // Keyed by symbol for the same reason as the watchlist: the positions array
+  // is rebuilt on every live tick, and handing that to the list rebuilt every
+  // delegate and threw the scroll position back to the top.
+  property var holdingKeys: []
+  property var holdingIndex: ({})
+
+  readonly property var selectedHolding: holdingKeys.length > 0
+    ? holdingFor(holdingKeys[Math.max(0, Math.min(selectedIndex, holdingKeys.length - 1))]) : null
+
+  function holdingFor(symbol) {
+    return holdingIndex[symbol] || { symbol: symbol, currency: "", quantity: "0", market_value: "0", day_gain: "0", total_gain: "0" }
+  }
+
+  function syncHoldings() {
+    var rows = portfolio.positions || []
+    var keys = []
+    var index = {}
+    for (var i = 0; i < rows.length; i++) {
+      var symbol = String(rows[i].symbol || "")
+      if (!symbol) continue
+      keys.push(symbol)
+      index[symbol] = rows[i]
+    }
+    holdingIndex = index
+    if (keys.join("\u0000") === holdingKeys.join("\u0000")) return
+    var offset = holdingsList.contentY
+    holdingKeys = keys
+    Qt.callLater(function() {
+      holdingsList.contentY = Math.max(0, Math.min(offset, Math.max(0, holdingsList.contentHeight - holdingsList.height)))
+    })
+  }
+
+  onPortfolioChanged: syncHoldings()
+  Component.onCompleted: syncHoldings()
 
   width: parent ? parent.width : 0
   spacing: Style.space(8)
 
   function alpha(color, opacity) { return Qt.rgba(color.r, color.g, color.b, opacity) }
   function gainLossColor(value) { return Number(value || 0) < 0 ? root.lossColor : root.gainColor }
+  // Risk reads like a warning light: safe green, danger red, the two steps
+  // between them amber. The only place in this panel where those colours mean
+  // something other than rise and fall — and the label says which it is.
+  function riskColor(level) {
+    var value = Number(level)
+    if (value === 0) return root.gainColor
+    if (value === 1 || value === 2) return "#f0b072"
+    if (value === 3) return root.lossColor
+    return root.textColor
+  }
+
+  function allocationColor(label, index) {
+    if (label === "US") return "#6aa9f4"
+    if (label === "HK") return "#c792ea"
+    if (label === "CN") return "#f0b072"
+    if (label === "SG") return "#5ec8c4"
+    if (label === "CASH") return root.alpha(root.textColor, 0.35)
+    var spare = ["#9aa7f2", "#d2a0c8", "#8fb9a8", "#b7a6f0"]
+    return spare[index % spare.length]
+  }
+  function signedPercent(value) {
+    var amount = Number(value || 0)
+    return (amount > 0 ? "+" : amount < 0 ? "−" : "") + Math.abs(amount).toFixed(2) + "%"
+  }
   function money(value, currency, compact) {
     var amount = Number(value || 0)
     var suffix = ""
@@ -124,18 +182,74 @@ Column {
     }
   }
 
+  // Where the account actually sits, by market and cash. The palette is
+  // categorical and deliberately avoids red and green, which mean rise and fall
+  // everywhere else in this panel.
+  Column {
+    width: parent.width
+    spacing: Style.space(5)
+    visible: root.allocation.length > 0
+
+    Rectangle {
+      width: parent.width
+      height: Style.space(6)
+      radius: height / 2
+      color: root.alpha(root.textColor, 0.08)
+      clip: true
+      Row {
+        anchors.fill: parent
+        Repeater {
+          model: root.allocation
+          Rectangle {
+            required property var modelData
+            required property int index
+            width: Math.max(1, parent.width * modelData.share)
+            height: parent.height
+            color: root.allocationColor(modelData.label, index)
+          }
+        }
+      }
+    }
+
+    Row {
+      width: parent.width
+      spacing: Style.space(10)
+      Repeater {
+        model: root.allocation
+        Row {
+          required property var modelData
+          required property int index
+          spacing: Style.space(4)
+          Rectangle {
+            anchors.verticalCenter: parent.verticalCenter
+            width: Style.space(6); height: Style.space(6); radius: width / 2
+            color: root.allocationColor(modelData.label, index)
+          }
+          Text {
+            anchors.verticalCenter: parent.verticalCenter
+            text: modelData.label + " " + (modelData.share * 100).toFixed(1) + "%"
+            color: root.dimColor
+            font.family: root.panelFontFamily
+            font.pixelSize: Style.font.caption
+          }
+        }
+      }
+    }
+  }
+
   Row {
     width: parent.width
     spacing: Style.space(6)
     Repeater {
       model: [
-        { label: "CASH", value: root.money(root.portfolio.totalCash, "", true) },
-        { label: "MARKET", value: root.money(root.portfolio.marketValue, "", true) },
-        { label: "POSITIONS", value: String((root.portfolio.positions || []).length) }
+        { label: "CASH", value: root.money(root.portfolio.totalCash, "", true), tint: root.textColor },
+        { label: "MARKET", value: root.money(root.portfolio.marketValue, "", true), tint: root.textColor },
+        { label: "RISK", value: PortfolioModel.riskLevelName(root.portfolio.riskLevel), tint: root.riskColor(root.portfolio.riskLevel) },
+        { label: "CREDIT", value: root.money(root.portfolio.creditLimit, "", true), tint: root.textColor }
       ]
       Rectangle {
         required property var modelData
-        width: (root.width - Style.space(12)) / 3
+        width: (root.width - Style.space(18)) / 4
         implicitHeight: Style.space(34)
         radius: Style.cornerRadius
         color: root.alpha(root.textColor, 0.025)
@@ -145,7 +259,7 @@ Column {
           anchors.centerIn: parent
           spacing: Style.space(5)
           Text { anchors.verticalCenter: parent.verticalCenter; text: modelData.label; color: root.dimColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.caption }
-          Text { anchors.verticalCenter: parent.verticalCenter; text: modelData.value; color: root.textColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.caption; font.bold: true }
+          Text { anchors.verticalCenter: parent.verticalCenter; text: modelData.value; color: modelData.tint || root.textColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.caption; font.bold: true }
         }
       }
     }
@@ -165,15 +279,15 @@ Column {
       id: holdingsList
       anchors.fill: parent
       anchors.margins: 1
-      model: root.portfolio.positions || []
+      model: root.holdingKeys
       currentIndex: root.selectedIndex
       boundsBehavior: Flickable.StopAtBounds
       clip: true
       ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
       delegate: HoldingRow {
-        required property var modelData
+        required property string modelData
         required property int index
-        holding: modelData
+        holding: root.holdingFor(modelData)
         textColor: root.textColor
         panelFontFamily: root.panelFontFamily
         selected: index === root.selectedIndex
@@ -211,7 +325,27 @@ Column {
       spacing: Style.space(7)
       Row {
         width: parent.width
-        Text { width: parent.width - backButton.width; text: String(root.selectedHolding && root.selectedHolding.symbol || ""); color: root.textColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.body; font.bold: true }
+        Column {
+          width: parent.width - backButton.width
+          spacing: Style.space(1)
+          Text {
+            width: parent.width
+            text: String(root.selectedHolding && root.selectedHolding.name || "").toUpperCase()
+            color: root.dimColor
+            font.family: root.panelFontFamily
+            font.pixelSize: Style.font.caption
+            elide: Text.ElideRight
+          }
+          Text {
+            width: parent.width
+            text: String(root.selectedHolding && root.selectedHolding.symbol || "")
+            color: root.textColor
+            font.family: root.panelFontFamily
+            font.pixelSize: Style.font.body
+            font.bold: true
+            elide: Text.ElideRight
+          }
+        }
         Button { id: backButton; text: "Back"; foreground: root.textColor; bordered: true; onClicked: root.detailOpen = false }
       }
       Grid {
@@ -224,7 +358,11 @@ Column {
             { label: "AVAILABLE", value: root.selectedHolding.available_quantity },
             { label: "MARKET PRICE", value: root.money(root.selectedHolding.last, root.selectedHolding.currency, false) },
             { label: "AVERAGE COST", value: root.money(root.selectedHolding.cost_price, root.selectedHolding.currency, false) },
-            { label: "TOTAL P/L", value: root.signedMoney(root.selectedHolding.total_gain, root.selectedHolding.currency, false) },
+            { label: "MARKET VALUE", value: root.money(root.selectedHolding.market_value, root.selectedHolding.currency, false) },
+            { label: "INTRADAY", value: root.signedMoney(root.selectedHolding.day_gain, "", false)
+              + "  " + root.signedPercent(PortfolioModel.intradayPercent(root.selectedHolding)) },
+            { label: "FLOATING", value: root.signedMoney(root.selectedHolding.total_gain, "", false)
+              + "  " + root.signedPercent(PortfolioModel.floatingPercent(root.selectedHolding)) },
             { label: "CURRENCY", value: root.selectedHolding.currency }
           ] : []
           Column {

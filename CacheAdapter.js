@@ -103,7 +103,17 @@ function staticInfoPayload(info, kept) {
   if (!info || typeof info !== "object") return result
   for (var symbol in info) {
     if (!kept[symbol] || !info[symbol]) continue
-    result[symbol] = { currency: String(info[symbol].currency || ""), lot_size: Number(info[symbol].lot_size || 0) }
+    var row = info[symbol]
+    result[symbol] = {
+      currency: String(row.currency || ""),
+      lot_size: Number(row.lot_size || 0),
+      eps_ttm: String(row.eps_ttm || ""),
+      bps: String(row.bps || ""),
+      dividend_yield: String(row.dividend_yield || ""),
+      total_shares: String(row.total_shares || ""),
+      circulating_shares: String(row.circulating_shares || ""),
+      exchange: String(row.exchange || "")
+    }
   }
   return result
 }

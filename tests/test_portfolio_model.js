@@ -122,3 +122,38 @@ state = context.applyEvent(state, { type: "error", code: "portfolio_failed", mes
 assert.strictEqual(state.error, "Could not load.")
 
 console.log("portfolio model tests passed")
+
+// P/L percentages: intraday against yesterday's close, floating against cost,
+// and a short position measures against the size of the position, not its sign.
+{
+  const long = { quantity: "10", prev_close: "100.00", cost_price: "80.00", day_gain: "50.00", total_gain: "200.00" }
+  assert.strictEqual(context.intradayPercent(long).toFixed(2), "5.00")
+  assert.strictEqual(context.floatingPercent(long).toFixed(2), "25.00")
+
+  const short = { quantity: "-1", prev_close: "589.07", cost_price: "612.00", day_gain: "5.90", total_gain: "23.05" }
+  assert.strictEqual(context.intradayPercent(short).toFixed(2), "1.00")
+  assert.strictEqual(context.floatingPercent(short).toFixed(2), "3.77")
+
+  assert.strictEqual(context.intradayPercent({ quantity: "0", prev_close: "0" }), 0)
+
+  // Allocation is taken in the report currency, so an HK row enters at its
+  // converted weight rather than its HKD face value.
+  const state = context.applyEvent(context.initialState(), {
+    type: "portfolio",
+    currency: "USD",
+    total_cash: "100.00",
+    positions: [
+      { symbol: "AAPL.US", quantity: "1", market_value: "300.00", report_factor: "1" },
+      { symbol: "9988.HK", quantity: "100", market_value: "4000.00", report_factor: "0.125" }
+    ]
+  })
+  const allocation = JSON.parse(JSON.stringify(context.allocation(state)))
+  assert.deepStrictEqual(allocation.map(row => row.label), ["US", "HK", "CASH"])
+  assert.deepStrictEqual(allocation.map(row => row.value), ["300.00", "500.00", "100.00"])
+  assert.strictEqual(allocation.reduce((sum, row) => sum + row.share, 0).toFixed(4), "1.0000")
+  assert.strictEqual(context.riskLevelName(0), "SAFE")
+  assert.strictEqual(context.riskLevelName(3), "DANGER")
+  assert.strictEqual(context.riskLevelName("nope"), "—")
+}
+
+console.log("portfolio percentage and allocation tests passed")

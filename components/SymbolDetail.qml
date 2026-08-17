@@ -13,7 +13,29 @@ Column {
 
   readonly property real lastValue: Number(root.quote && root.quote.last || 0)
   readonly property real previousValue: Number(root.quote && root.quote.prev_close || 0)
-  readonly property color movementColor: previousValue > 0 && lastValue < previousValue ? "#ff6b7a" : "#63d297"
+  readonly property real changeValue: previousValue > 0 ? lastValue - previousValue : 0
+  readonly property real changePercent: previousValue > 0 ? (changeValue / previousValue) * 100 : 0
+  readonly property color movementColor: changeValue < 0 ? "#ff6b7a" : "#63d297"
+
+  function signed(value, places) {
+    var amount = Number(value || 0)
+    return (amount > 0 ? "+" : amount < 0 ? "−" : "") + Math.abs(amount).toFixed(places)
+  }
+
+  function compactCount(value) {
+    var amount = Number(value || 0)
+    if (!isFinite(amount) || amount === 0) return "—"
+    if (Math.abs(amount) >= 1e9) return (amount / 1e9).toFixed(2) + "B"
+    if (Math.abs(amount) >= 1e6) return (amount / 1e6).toFixed(2) + "M"
+    if (Math.abs(amount) >= 1e3) return (amount / 1e3).toFixed(2) + "K"
+    return String(amount)
+  }
+
+  function ratio(value, divisor) {
+    var top = Number(value || 0)
+    var bottom = Number(divisor || 0)
+    return bottom > 0 ? (top / bottom).toFixed(2) : "—"
+  }
 
   width: parent ? parent.width : implicitWidth
   spacing: Style.spacing.panelGap
@@ -34,22 +56,53 @@ Column {
     Item { width: Math.max(0, parent.width - parent.children[0].width - parent.spacing); height: 1 }
   }
 
-  Text {
+  Column {
     width: parent.width
-    text: String(root.quote && root.quote.symbol || "")
-    color: root.textColor
-    font.family: root.panelFontFamily
-    font.pixelSize: Style.font.title
-    font.bold: true
+    spacing: Style.space(1)
+    Text {
+      width: parent.width
+      text: String(root.quote && root.quote.name || "").toUpperCase()
+      color: Qt.darker(root.textColor, 1.5)
+      font.family: root.panelFontFamily
+      font.pixelSize: Style.font.caption
+      elide: Text.ElideRight
+    }
+    Text {
+      width: parent.width
+      text: String(root.quote && root.quote.symbol || "")
+        + (root.quote && root.quote.currency ? "  ·  " + root.quote.currency : "")
+        + (root.quote && root.quote.trade_status ? "  ·  " + root.quote.trade_status : "")
+      color: root.textColor
+      font.family: root.panelFontFamily
+      font.pixelSize: Style.font.body
+      font.bold: true
+      elide: Text.ElideRight
+    }
   }
 
-  Text {
+  // Last, change and change percent, all in the trend colour: this is the line
+  // the panel is opened to read.
+  Row {
     width: parent.width
-    text: Model.formatPrice(root.quote && root.quote.last) + "  " + String(root.quote && root.quote.currency || "")
-    color: root.textColor
-    font.family: root.panelFontFamily
-    font.pixelSize: Style.font.hero
-    font.bold: true
+    spacing: Style.space(10)
+
+    Text {
+      anchors.baseline: changeText.baseline
+      text: Model.formatPrice(root.quote && root.quote.last)
+      color: root.movementColor
+      font.family: root.panelFontFamily
+      font.pixelSize: Style.font.title
+      font.bold: true
+    }
+    Text {
+      id: changeText
+      text: root.signed(root.changeValue, Math.abs(root.lastValue) < 1 ? 4 : 2)
+        + "  " + root.signed(root.changePercent, 2) + "%"
+      color: root.movementColor
+      font.family: root.panelFontFamily
+      font.pixelSize: Style.font.body
+      font.bold: true
+    }
   }
 
   // Same intraday series the row draws, given the room to be read.
@@ -81,12 +134,19 @@ Column {
 
     Repeater {
       model: [
-        { label: "OPEN", value: root.quote && root.quote.open },
-        { label: "PREVIOUS", value: root.quote && root.quote.prev_close },
-        { label: "HIGH", value: root.quote && root.quote.high },
-        { label: "LOW", value: root.quote && root.quote.low },
-        { label: "VOLUME", value: root.quote && root.quote.volume },
-        { label: "SESSION", value: root.quote && (root.quote.price_session || root.quote.trade_session) }
+        { label: "OPEN", value: Model.formatPrice(root.quote && root.quote.open) },
+        { label: "PREV CLOSE", value: Model.formatPrice(root.quote && root.quote.prev_close) },
+        { label: "HIGH", value: Model.formatPrice(root.quote && root.quote.high) },
+        { label: "LOW", value: Model.formatPrice(root.quote && root.quote.low) },
+        { label: "VOLUME", value: root.compactCount(root.quote && root.quote.volume) },
+        { label: "TURNOVER", value: root.compactCount(root.quote && root.quote.turnover) },
+        { label: "P/E (TTM)", value: root.ratio(root.quote && root.quote.last, root.quote && root.quote.eps_ttm) },
+        { label: "EPS (TTM)", value: root.quote && root.quote.eps_ttm ? Model.formatPrice(root.quote.eps_ttm) : "—" },
+        { label: "BPS", value: root.quote && root.quote.bps ? Model.formatPrice(root.quote.bps) : "—" },
+        { label: "DIV YIELD", value: root.quote && root.quote.dividend_yield ? Number(root.quote.dividend_yield).toFixed(2) + "%" : "—" },
+        { label: "SHARES", value: root.compactCount(root.quote && root.quote.total_shares) },
+        { label: "LOT SIZE", value: root.quote && root.quote.lot_size ? String(root.quote.lot_size) : "—" },
+        { label: "SESSION", value: String(root.quote && (root.quote.price_session || root.quote.trade_session) || "—") }
       ]
       delegate: Column {
         required property var modelData
@@ -100,8 +160,7 @@ Column {
         }
         Text {
           width: parent.width
-          text: modelData.label === "SESSION" || modelData.label === "VOLUME"
-            ? String(modelData.value || "—") : Model.formatPrice(modelData.value)
+          text: String(modelData.value || "—")
           color: root.textColor
           font.family: root.panelFontFamily
           font.pixelSize: Style.font.body

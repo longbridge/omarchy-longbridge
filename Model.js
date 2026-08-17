@@ -111,6 +111,9 @@ function applyEvent(state, event) {
   next.error = state.error || null
   var type = String(event && event.type || "")
 
+  // A different account is behind the session now: nothing that was on screen
+  // belongs to it.
+  if (type === "reset") return initialState(next.symbols)
   if (type === "connection") {
     next.connection = String(event.state || "disconnected")
   } else if (type === "snapshot") {

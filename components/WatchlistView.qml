@@ -41,7 +41,15 @@ Column {
   function syncRows() {
     var keys = Model.rowKeys(visibleRows)
     rowIndex = Model.rowsBySymbol(visibleRows)
-    if (keys.join("\u0000") !== rowKeys.join("\u0000")) rowKeys = keys
+    if (keys.join("\u0000") === rowKeys.join("\u0000")) return
+    // Replacing a list's model resets it to the top. Membership and ordering do
+    // change under a live feed, so the position is put back where the reader
+    // left it rather than snapping to the first row.
+    var offset = quoteList.contentY
+    rowKeys = keys
+    Qt.callLater(function() {
+      quoteList.contentY = Math.max(0, Math.min(offset, Math.max(0, quoteList.contentHeight - quoteList.height)))
+    })
   }
 
   function rowFor(symbol) {
@@ -68,10 +76,13 @@ Column {
   readonly property color dimColor: Qt.rgba(textColor.r, textColor.g, textColor.b, 0.58)
   readonly property var selectedQuote: visibleRows.length > 0
     ? visibleRows[Math.max(0, Math.min(selectedIndex, visibleRows.length - 1))] : null
+  // Group names are labels, not prose — uppercased to match the symbols and
+  // the rest of the row furniture. Only the display changes; the service still
+  // matches Longbridge's own names when it fills the holdings group.
   readonly property var groupOptions: {
     var result = []
     for (var i = 0; i < groups.length; i++)
-      result.push({ value: String(groups[i].id), label: String(groups[i].name || "Unnamed") })
+      result.push({ value: String(groups[i].id), label: String(groups[i].name || "Unnamed").toUpperCase() })
     return result
   }
 
