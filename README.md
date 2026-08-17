@@ -4,7 +4,9 @@ A compact Omarchy watchlist and Longbridge portfolio panel.
 
 The Watchlist loads your authenticated Longbridge groups and streams live prices over `longbridge serve`. The Portfolio tab uses Longbridge Terminal for account data.
 
-![Longbridge watchlist panel](assets/longbridge-panel.png)
+| Watchlist | Portfolio | Quote detail |
+|---|---|---|
+| ![Watchlist with live prices and intraday sparklines](assets/longbridge-panel.png) | ![Portfolio with P/L, allocation and live holdings](assets/longbridge-portfolio.png) | ![Quote detail with change, chart and fundamentals](assets/longbridge-detail.png) |
 
 ## Requirements
 
