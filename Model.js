@@ -33,6 +33,7 @@ function initialState(symbols) {
     activeGroupId: "",
     quotes: {},
     quoteErrors: {},
+    charts: {},
     subscribed: [],
     connection: "idle",
     auth: "unknown",
@@ -106,6 +107,7 @@ function applyEvent(state, event) {
   next.subscribed = (state.subscribed || []).slice()
   next.quotes = copyObject(state.quotes || {})
   next.quoteErrors = copyObject(state.quoteErrors || {})
+  next.charts = copyObject(state.charts || {})
   next.error = state.error || null
   var type = String(event && event.type || "")
 
@@ -128,6 +130,9 @@ function applyEvent(state, event) {
   } else if (type === "quote") {
     var symbol = normalizedSymbol(event.symbol)
     if (symbolKeyIsValid(symbol)) next.quotes[symbol] = mergedQuote(next.quotes[symbol], event)
+  } else if (type === "chart") {
+    var chartSymbol = normalizedSymbol(event.symbol)
+    if (symbolKeyIsValid(chartSymbol) && event.series) next.charts[chartSymbol] = event.series
   } else if (type === "subscription") {
     next.subscribed = normalizedSymbols(event.symbols)
     next.connection = "live"
@@ -147,10 +152,48 @@ function marketForSymbol(symbol) {
   return suffix
 }
 
+function marketPriority(symbol) {
+  var suffix = normalizedSymbol(symbol).split(".").pop()
+  if (suffix === "US") return 0
+  if (suffix === "HK") return 1
+  if (suffix === "SH" || suffix === "SZ") return 2
+  if (suffix === "SG") return 3
+  return 99
+}
+
+// Mirrors the terminal's watchlist ordering (longbridge-terminal
+// src/data/watchlist.rs): symbols in their normal trading session first, then
+// by market, and stable within a key so equal rows keep the order Longbridge
+// returned rather than picking up an arbitrary alphabetical tiebreaker.
+//
+// A row without a session yet counts as Intraday, matching the terminal, where
+// trade_session defaults to Intraday and only a push moves it. So a symbol
+// falls to the bottom only when it actually ticks outside regular hours — an
+// overnight-eligible name during the overnight session, say — while the rest of
+// its market holds its place.
+function orderedRows(rows) {
+  var indices = []
+  for (var i = 0; i < rows.length; i++) indices.push(i)
+  indices.sort(function(a, b) {
+    var notTradingA = rows[a].trade_session && rows[a].trade_session !== "Intraday" ? 1 : 0
+    var notTradingB = rows[b].trade_session && rows[b].trade_session !== "Intraday" ? 1 : 0
+    if (notTradingA !== notTradingB) return notTradingA - notTradingB
+    var marketA = marketPriority(rows[a].symbol)
+    var marketB = marketPriority(rows[b].symbol)
+    if (marketA !== marketB) return marketA - marketB
+    return a - b
+  })
+  var result = []
+  for (var j = 0; j < indices.length; j++) result.push(rows[indices[j]])
+  return result
+}
+
 function rows(state) {
   var result = []
+  var seen = {}
   var quotes = state && state.quotes ? state.quotes : {}
   var errors = state && state.quoteErrors ? state.quoteErrors : {}
+  var charts = state && state.charts ? state.charts : {}
   var group = activeGroup(state)
   var securities = group && listLike(group.securities) ? group.securities : null
   var symbols = securities ? [] : normalizedSymbols(state && state.symbols)
@@ -158,10 +201,50 @@ function rows(state) {
   for (var i = 0; i < length; i++) {
     var security = securities ? securities[i] : { symbol: symbols[i] }
     var symbol = normalizedSymbol(security.symbol)
+    if (seen[symbol]) continue
+    seen[symbol] = true
     var row = mergedQuote(quotes[symbol] || { symbol: symbol }, security)
     row.ready = !!quotes[symbol]
     row.errorMessage = String(errors[symbol] || "")
+    row.series = charts[symbol] || null
     result.push(row)
+  }
+  return orderedRows(result)
+}
+
+// Quick filter for the watchlist box: case-insensitive substring over both the
+// symbol and the security name, so "tsm", "TSM.US" and "taiwan" all reach the
+// same row.
+function filterRows(rows, query) {
+  var source = listLike(rows) ? rows : []
+  var needle = String(query || "").replace(/^\s+|\s+$/g, "").toLowerCase()
+  if (needle === "") return source
+  var result = []
+  for (var i = 0; i < source.length; i++) {
+    var row = source[i] || {}
+    var symbol = String(row.symbol || "").toLowerCase()
+    var name = String(row.name || "").toLowerCase()
+    if (symbol.indexOf(needle) >= 0 || name.indexOf(needle) >= 0) result.push(row)
+  }
+  return result
+}
+
+// The list is keyed by symbol so its delegates survive a price tick: the rows
+// themselves are rebuilt on every update, but this stays identical unless
+// membership, filtering or ordering actually changed.
+function rowKeys(rows) {
+  var source = listLike(rows) ? rows : []
+  var result = []
+  for (var i = 0; i < source.length; i++) result.push(String(source[i] && source[i].symbol || ""))
+  return result
+}
+
+function rowsBySymbol(rows) {
+  var source = listLike(rows) ? rows : []
+  var result = {}
+  for (var i = 0; i < source.length; i++) {
+    var symbol = String(source[i] && source[i].symbol || "")
+    if (symbol) result[symbol] = source[i]
   }
   return result
 }
@@ -222,6 +305,11 @@ if (typeof module !== "undefined") module.exports = {
   activeGroup: activeGroup,
   applyEvent: applyEvent,
   marketForSymbol: marketForSymbol,
+  marketPriority: marketPriority,
+  filterRows: filterRows,
+  rowKeys: rowKeys,
+  rowsBySymbol: rowsBySymbol,
+  orderedRows: orderedRows,
   rows: rows,
   marketGroups: marketGroups,
   formatPrice: formatPrice,

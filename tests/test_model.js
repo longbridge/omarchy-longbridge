@@ -101,14 +101,21 @@ test("partial snapshots preserve failed-symbol values and attach row errors", ()
   assert.equal(Model.rows(state)[1].errorMessage, "")
 })
 
-test("flat rows preserve configured watchlist order", () => {
+test("flat rows follow terminal ordering: trading first, then market", () => {
   let state = Model.initialState(["D05.SG", "AAPL.US", "700.HK"])
   state = Model.applyEvent(state, {
     type: "snapshot",
     quotes: [{ symbol: "AAPL.US", last: "1", prev_close: "1", timestamp: 100 }],
     errors: []
   })
-  assert.deepEqual(Model.rows(state).map(row => row.symbol), ["D05.SG", "AAPL.US", "700.HK"])
+  // No session yet counts as Intraday, as in the terminal, so market priority
+  // decides and nothing is pushed to the bottom.
+  assert.deepEqual(Model.rows(state).map(row => row.symbol), ["AAPL.US", "700.HK", "D05.SG"])
+
+  // A push outside regular hours sinks that symbol below every trading one,
+  // whatever its market — this is why SPY trails D05.SG in the terminal.
+  state = Model.applyEvent(state, { type: "quote", symbol: "AAPL.US", trade_session: "Overnight" })
+  assert.deepEqual(Model.rows(state).map(row => row.symbol), ["700.HK", "D05.SG", "AAPL.US"])
 })
 
 test("rows are grouped in US, HK, CN, SG order", () => {
@@ -148,3 +155,75 @@ test("stale state and decimal formatting are derived from literal timestamps", (
   assert.equal(Model.formatPercent("1.234"), "+1.23%")
   assert.equal(Model.formatPercent("-1.234"), "−1.23%")
 })
+
+// Watchlist ordering mirrors longbridge-terminal src/data/watchlist.rs:
+// trading symbols first, then US, HK, SH/SZ, SG, stable within a key.
+{
+  const ordered = Model.orderedRows([
+    { symbol: "D05.SG", trade_session: "Intraday" },
+    { symbol: "600519.SH", trade_session: "Intraday" },
+    { symbol: "AAPL.US", trade_session: "Overnight" },
+    { symbol: "700.HK", trade_session: "Intraday" },
+    { symbol: "NVDA.US", trade_session: "Intraday" },
+    { symbol: "9988.HK", trade_session: "Post" },
+    { symbol: "TSLA.US", trade_session: "Intraday" }
+  ])
+  assert.deepStrictEqual(ordered.map(row => row.symbol), [
+    // Normal trading session first, by market priority…
+    "NVDA.US", "TSLA.US", "700.HK", "600519.SH", "D05.SG",
+    // …then everything else, same market order.
+    "AAPL.US", "9988.HK"
+  ])
+  assert.strictEqual(Model.marketPriority("AAPL.US"), 0)
+  assert.strictEqual(Model.marketPriority("700.HK"), 1)
+  assert.strictEqual(Model.marketPriority("000568.SZ"), 2)
+  assert.strictEqual(Model.marketPriority("D05.SG"), 3)
+  assert.strictEqual(Model.marketPriority("BTCUSD.HAS"), 99)
+
+  // A row with no quote yet counts as Intraday, so market priority decides,
+  // and duplicates collapse.
+  const state = Model.applyGroups(Model.initialState([]), [{
+    id: "1",
+    name: "all",
+    securities: [
+      { symbol: "700.HK" }, { symbol: "AAPL.US" }, { symbol: "AAPL.US" }
+    ]
+  }], "1")
+  const live = Model.applyEvent(state, { type: "quote", symbol: "700.HK", trade_session: "Intraday", last: "448.40" })
+  assert.deepStrictEqual(Model.rows(live).map(row => row.symbol), ["AAPL.US", "700.HK"])
+
+  // Once 700.HK ticks in a post session it drops below the untouched US row.
+  const post = Model.applyEvent(live, { type: "quote", symbol: "700.HK", trade_session: "Post" })
+  assert.deepStrictEqual(Model.rows(post).map(row => row.symbol), ["AAPL.US", "700.HK"])
+}
+
+console.log("model ordering tests passed")
+
+// The filter matches symbol and name, ignoring case either way.
+{
+  const rows = [
+    { symbol: "TSM.US", name: "Taiwan Semiconductor" },
+    { symbol: "700.HK", name: "TENCENT" },
+    { symbol: "AAPL.US", name: "Apple" }
+  ]
+  const symbols = query => Model.filterRows(rows, query).map(row => row.symbol)
+  assert.deepStrictEqual(symbols("tsm"), ["TSM.US"])
+  assert.deepStrictEqual(symbols("TSM.US"), ["TSM.US"])
+  assert.deepStrictEqual(symbols("taiwan"), ["TSM.US"])
+  assert.deepStrictEqual(symbols("TAIWAN SEMI"), ["TSM.US"])
+  assert.deepStrictEqual(symbols("tencent"), ["700.HK"])
+  assert.deepStrictEqual(symbols(".hk"), ["700.HK"])
+  assert.deepStrictEqual(symbols("  apple  "), ["AAPL.US"])
+  assert.deepStrictEqual(symbols("zzz"), [])
+  assert.deepStrictEqual(symbols(""), rows.map(row => row.symbol))
+  assert.deepStrictEqual(symbols(null), rows.map(row => row.symbol))
+  assert.deepStrictEqual(Model.filterRows(null, "x"), [])
+
+  // Keys stay identical across a price tick, so the list keeps its delegates.
+  const ticked = rows.map(row => ({ symbol: row.symbol, name: row.name, last: "1.00" }))
+  assert.deepStrictEqual(Model.rowKeys(ticked), Model.rowKeys(rows))
+  assert.strictEqual(Model.rowsBySymbol(rows)["700.HK"].name, "TENCENT")
+  assert.deepStrictEqual(Model.rowKeys(null), [])
+}
+
+console.log("filter and key tests passed")

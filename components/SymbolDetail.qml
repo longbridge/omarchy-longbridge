@@ -11,6 +11,10 @@ Column {
   property string panelFontFamily: Style.font.family
   signal backRequested()
 
+  readonly property real lastValue: Number(root.quote && root.quote.last || 0)
+  readonly property real previousValue: Number(root.quote && root.quote.prev_close || 0)
+  readonly property color movementColor: previousValue > 0 && lastValue < previousValue ? "#ff6b7a" : "#63d297"
+
   width: parent ? parent.width : implicitWidth
   spacing: Style.spacing.panelGap
 
@@ -48,6 +52,27 @@ Column {
     font.bold: true
   }
 
+  // Same intraday series the row draws, given the room to be read.
+  Rectangle {
+    width: parent.width
+    height: Style.space(96)
+    visible: detailChart.hasSeries
+    color: Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.03)
+    border.width: 1
+    border.color: Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.10)
+    radius: Style.cornerRadius
+
+    Sparkline {
+      id: detailChart
+      anchors.fill: parent
+      anchors.margins: Style.space(8)
+      series: root.quote && root.quote.series ? root.quote.series : null
+      previousClose: Number(root.quote && root.quote.prev_close || 0)
+      lineColor: root.movementColor
+      guideColor: root.textColor
+    }
+  }
+
   Grid {
     width: parent.width
     columns: 2
@@ -61,7 +86,7 @@ Column {
         { label: "HIGH", value: root.quote && root.quote.high },
         { label: "LOW", value: root.quote && root.quote.low },
         { label: "VOLUME", value: root.quote && root.quote.volume },
-        { label: "SESSION", value: root.quote && root.quote.trade_session }
+        { label: "SESSION", value: root.quote && (root.quote.price_session || root.quote.trade_session) }
       ]
       delegate: Column {
         required property var modelData

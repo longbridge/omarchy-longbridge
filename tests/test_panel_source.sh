@@ -42,6 +42,23 @@ grep -F 'implicitHeight: Style.space(44)' components/HoldingRow.qml >/dev/null
 grep -F 'spacing: Style.space(4)' components/HoldingRow.qml >/dev/null
 grep -F 'ListView {' components/WatchlistView.qml >/dev/null
 grep -F 'Dropdown {' components/WatchlistView.qml >/dev/null
+grep -F 'id: searchField' components/WatchlistView.qml >/dev/null
+grep -F 'placeholderText: "Filter"' components/WatchlistView.qml >/dev/null
+# The list is keyed by symbol so a price tick updates delegates in place
+# instead of rebuilding them, which is what made the chart flicker and the
+# view jump while charts loaded.
+grep -F 'model: root.rowKeys' components/WatchlistView.qml >/dev/null
+grep -F 'quote: root.rowFor(modelData)' components/WatchlistView.qml >/dev/null
+grep -F 'id: clearButton' components/WatchlistView.qml >/dev/null
+# Rows are narrow: no currency column, and the stale marker is a glyph.
+! grep -F 'text: "STALE"' components/WatchlistRow.qml
+! grep -F 'root.quote.currency' components/WatchlistRow.qml
+grep -F 'ToolTip.text: "Last price is more than five minutes old"' components/WatchlistRow.qml >/dev/null
+grep -F 'blocked: root.activeTab === 0 && watchlistView.searching' Panel.qml >/dev/null
+grep -F 'watchlistView.focusSearch()' Panel.qml >/dev/null
+grep -F 'Quickshell.cachePath("longbridge/watchlist.json")' WatchlistService.qml >/dev/null
+grep -F 'onLoaded: root.applyCache(cacheFile.text())' WatchlistService.qml >/dev/null
+grep -F 'atomicWrites: true' WatchlistService.qml >/dev/null
 grep -F 'groups: watchlistService.groups' Panel.qml >/dev/null
 grep -F 'activeGroupId: watchlistService.activeGroupId' Panel.qml >/dev/null
 ! grep -F 'addRequested' components/WatchlistView.qml
@@ -52,10 +69,33 @@ grep -F 'activeGroupId: watchlistService.activeGroupId' Panel.qml >/dev/null
 ! grep -F 'onDeleteRequested' Panel.qml
 grep -F 'ListView {' components/PortfolioView.qml >/dev/null
 ! grep -F 'LongbridgeLogo' components/PortfolioView.qml
-grep -F 'PanelActionButton {' components/PortfolioView.qml >/dev/null
-grep -F 'iconText: "󰑐"' components/PortfolioView.qml >/dev/null
-grep -F 'tooltipText: "Refresh"' components/PortfolioView.qml >/dev/null
-! grep -F 'text: "Refresh"' components/PortfolioView.qml
+# Prices stream; there is no refresh control on either tab and no update timer.
+! grep -F 'tooltipText: "Refresh"' components/PortfolioView.qml
+! grep -F 'tooltipText: "Refresh"' components/WatchlistView.qml
+! grep -F 'refreshRequested' components/PortfolioView.qml
+! grep -F 'refreshRequested' components/WatchlistView.qml
+grep -F 'LiveIndicator {' components/PortfolioView.qml >/dev/null
+grep -F 'LiveIndicator {' components/WatchlistView.qml >/dev/null
+# Charts live in their own fixed column so every row's line starts at the same x.
+grep -F 'Sparkline {' components/WatchlistRow.qml >/dev/null
+grep -F 'Sparkline {' components/SymbolDetail.qml >/dev/null
+grep -F 'width: Style.space(58)' components/WatchlistRow.qml >/dev/null
+grep -F 'width: Style.space(104)' components/WatchlistRow.qml >/dev/null
+# One chart request per symbol, not one per tick.
+grep -F 'root.chartRequested(symbol)' components/WatchlistRow.qml >/dev/null
+grep -F 'if (!symbol || symbol === chartAskedFor) return' components/WatchlistRow.qml >/dev/null
+grep -F 'watchlistService.requestChart(symbol)' Panel.qml >/dev/null
+# The holdings group is filled from account positions, not the watchlist API.
+# Rows painted from the cache ask for charts before the session exists, so the
+# queue must wait for it rather than be spent against a stopped server.
+grep -F 'if (!session || !session.ready) return' WatchlistService.qml >/dev/null
+grep -F 'root.drainCharts()' WatchlistService.qml >/dev/null
+grep -F 'trade.stock_positions' WatchlistService.qml >/dev/null
+grep -F 'RpcAdapter.holdingsGroupIndex(parsed.groups)' WatchlistService.qml >/dev/null
+grep -F 'QuoteFeed {' Panel.qml >/dev/null
+grep -F 'LongbridgeRpc {' Panel.qml >/dev/null
+grep -F 'feed.setSymbols("watchlist", symbols)' WatchlistService.qml >/dev/null
+grep -F 'feed.setSymbols("portfolio", wanted)' PortfolioService.qml >/dev/null
 grep -F 'implicitWidth: Style.space(28)' components/PanelMenu.qml >/dev/null
 grep -F 'property bool previewInstallGuide: false' components/LongbridgeSetup.qml >/dev/null
 grep -F 'property bool cliInstalled: false' components/LongbridgeSetup.qml >/dev/null

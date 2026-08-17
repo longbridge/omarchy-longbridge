@@ -1,101 +1,11 @@
 .pragma library
 
-function watchlistCommand() {
-  return ["longbridge", "watchlist", "--format", "json"]
-}
-
-function quoteCommand(symbols) {
-  var command = ["longbridge", "quote"]
-  var source = symbols && typeof symbols.length === "number" ? symbols : []
-  for (var i = 0; i < source.length; i++) command.push(String(source[i]))
-  command.push("--format", "json")
-  return command
-}
-
+// Watchlist and quotes come from `longbridge serve` (see RpcAdapter.js). The
+// portfolio stays on the CLI: `serve` exposes the raw OpenAPI calls, but the
+// account overview it renders — cross-currency totals, day and total P/L — is
+// aggregated by the CLI command and has no JSON-RPC equivalent.
 function portfolioCommand() {
   return ["longbridge", "portfolio", "--format", "json"]
-}
-
-function parseWatchlist(text) {
-  var payload = parseJson(text)
-  if (!payload.ok || !Array.isArray(payload.value)) return invalid("Longbridge returned invalid watchlist data.")
-  var groups = []
-  var defaultGroupId = ""
-  var allCount = 0
-  for (var i = 0; i < payload.value.length; i++) {
-    var source = payload.value[i]
-    if (!source || typeof source !== "object" || !Array.isArray(source.securities))
-      return invalid("Longbridge returned invalid watchlist data.")
-    var id = String(source.id)
-    var name = String(source.name || "")
-    if (name.toLowerCase() === "all") {
-      allCount++
-      defaultGroupId = id
-    }
-    var securities = []
-    for (var j = 0; j < source.securities.length; j++) {
-      var security = source.securities[j]
-      if (!security || typeof security !== "object" || !security.symbol)
-        return invalid("Longbridge returned invalid watchlist data.")
-      securities.push({
-        symbol: String(security.symbol),
-        name: String(security.name || ""),
-        market: String(security.market || "Unknown"),
-        is_pinned: security.is_pinned === true
-      })
-    }
-    groups.push({ id: id, name: name, securities: securities })
-  }
-  if (allCount !== 1) return invalid("Longbridge watchlist has no unique all group.")
-  return { ok: true, groups: groups, defaultGroupId: defaultGroupId }
-}
-
-function parseQuotes(text) {
-  var payload = parseJson(text)
-  if (!payload.ok || !Array.isArray(payload.value)) return invalid("Longbridge returned invalid quote data.")
-  var quotes = []
-  for (var i = 0; i < payload.value.length; i++) {
-    var source = payload.value[i]
-    if (!source || typeof source !== "object" || !source.symbol) return invalid("Longbridge returned invalid quote data.")
-    var session = newestSession(source)
-    var active = session ? session.quote : source
-    quotes.push({
-      symbol: String(source.symbol),
-      name: String(source.name || ""),
-      currency: String(source.currency || ""),
-      last: String(active.last || source.last || "0"),
-      prev_close: String(source.prev_close || active.prev_close || "0"),
-      open: String(source.open || "0"),
-      high: String(active.high || source.high || "0"),
-      low: String(active.low || source.low || "0"),
-      volume: String(active.volume === undefined ? (source.volume || "0") : active.volume),
-      turnover: String(active.turnover || source.turnover || "0"),
-      timestamp: session ? Math.floor(Date.parse(active.timestamp) / 1000) : Math.floor(Date.now() / 1000),
-      trade_status: String(source.status || "Unknown"),
-      trade_session: session ? session.name : "Intraday"
-    })
-  }
-  return { ok: true, event: { type: "snapshot", quotes: quotes, errors: [] } }
-}
-
-function newestSession(source) {
-  var candidates = [
-    { name: "Pre", quote: source.pre_market },
-    { name: "Post", quote: source.post_market },
-    { name: "Overnight", quote: source.overnight }
-  ]
-  var newest = null
-  var newestTime = -1
-  for (var i = 0; i < candidates.length; i++) {
-    var quote = candidates[i].quote
-    if (!quote || !quote.last || !quote.timestamp) continue
-    var time = Date.parse(quote.timestamp)
-    if (!isNaN(time) && time > newestTime) {
-      newest = candidates[i]
-      newestTime = time
-    }
-  }
-  return newest
 }
 
 function parsePortfolio(text) {
@@ -106,12 +16,23 @@ function parsePortfolio(text) {
   if (!source.overview || !Array.isArray(source.holdings)) return invalid("Longbridge returned invalid portfolio data.")
   var overview = source.overview
   var positions = []
+  // Rows are priced in their own currency while the summary is reported in one.
+  // The snapshot carries both market_value and market_value_usd per holding, so
+  // the rate implied by that pair — scaled by the account's own USD-to-report
+  // ratio — converts a live price change into the report currency without
+  // asking for exchange rates the panel would then have to keep fresh.
+  var usdTotal = 0
+  for (var u = 0; u < source.holdings.length; u++) usdTotal += number(source.holdings[u].market_value_usd)
+  var usdToReport = usdTotal > 0 ? number(overview.market_cap) / usdTotal : 1
   for (var i = 0; i < source.holdings.length; i++) {
     var holding = source.holdings[i]
     var quantity = number(holding.quantity)
     var last = number(holding.market_price)
     var cost = number(holding.cost_price)
     var previous = number(holding.prev_close)
+    var value = number(holding.market_value)
+    var valueUsd = number(holding.market_value_usd)
+    var toUsd = value > 0 && valueUsd > 0 ? valueUsd / value : 1
     positions.push({
       symbol: String(holding.symbol || ""),
       name: String(holding.name || ""),
@@ -123,6 +44,7 @@ function parsePortfolio(text) {
       prev_close: String(holding.prev_close || "0"),
       market_value: String(holding.market_value || "0"),
       market_value_usd: String(holding.market_value_usd || "0"),
+      report_factor: String(toUsd * usdToReport),
       total_gain: ((last - cost) * quantity).toFixed(2),
       day_gain: ((last - previous) * quantity).toFixed(2)
     })

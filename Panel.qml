@@ -28,15 +28,31 @@ Panel {
 
   function moveSelection(delta) {
     if (activeTab === 0) {
-      watchlistView.selectedIndex = Math.max(0, Math.min(quoteRows.length - 1, watchlistView.selectedIndex + delta))
+      watchlistView.moveSelection(delta)
     } else {
       var count = (portfolioState.positions || []).length
       portfolioView.selectedIndex = Math.max(0, Math.min(count - 1, portfolioView.selectedIndex + delta))
     }
   }
 
+  // One `longbridge serve` session and one push feed for the whole panel: the
+  // watchlist and the portfolio register the symbols they show and are fed by
+  // the same subscription. Nothing in the panel polls for prices.
+  LongbridgeRpc {
+    id: session
+    serving: root.opened && setup.ready
+  }
+
+  QuoteFeed {
+    id: feed
+    session: session
+    active: root.opened
+  }
+
   WatchlistService {
     id: watchlistService
+    session: session
+    feed: feed
     panelOpen: root.opened && setup.ready
     active: root.activeTab === 0
     onGroupsEvent: function(groups, defaultGroupId) {
@@ -50,6 +66,7 @@ Panel {
 
   PortfolioService {
     id: portfolioService
+    feed: feed
     panelOpen: root.opened && setup.ready
     active: root.activeTab === 1
     onPortfolioEvent: function(event) { root.portfolioState = PortfolioModel.applyEvent(root.portfolioState, event) }
@@ -77,7 +94,11 @@ Panel {
         setup: setup.setupState,
         tab: root.activeTab === 0 ? "watchlist" : "portfolio",
         watchlist: watchlistService.watchlistState,
-        group: watchlistService.activeGroupId
+        group: watchlistService.activeGroupId,
+        session: session.status,
+        live: feed.live,
+        subscribed: feed.symbolCount,
+        charts: Object.keys(watchlistService.charts).length
       })
     }
   }
@@ -120,14 +141,18 @@ Panel {
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
+      // The watchlist filter is an inline editor: while it holds focus every
+      // key belongs to it, including the panel's single-letter shortcuts.
+      blocked: root.activeTab === 0 && watchlistView.searching
       onMoveRequested: function(dx, dy) { if (dy !== 0 && setup.ready) root.moveSelection(dy) }
       onActivateRequested: {
         if (!setup.ready) return
-        if (root.activeTab === 0 && root.quoteRows.length > 0) watchlistView.detailOpen = true
+        if (root.activeTab === 0 && watchlistView.visibleRows.length > 0) watchlistView.detailOpen = true
         else if (root.activeTab === 1 && root.portfolioState.positions.length > 0) portfolioView.detailOpen = true
       }
       onCloseRequested: {
-        if (watchlistView.detailOpen) watchlistView.detailOpen = false
+        if (root.activeTab === 0 && watchlistView.filterText !== "") watchlistView.clearSearch()
+        else if (watchlistView.detailOpen) watchlistView.detailOpen = false
         else if (portfolioView.detailOpen) portfolioView.detailOpen = false
         else root.close()
       }
@@ -135,7 +160,8 @@ Panel {
       onTextKey: function(text) {
         if (!setup.ready) return
         var key = String(text || "").toLowerCase()
-        if (key === "r" && root.activeTab === 0) watchlistService.refresh()
+        if ((key === "/" || key === "f") && root.activeTab === 0) watchlistView.focusSearch()
+        else if (key === "r" && root.activeTab === 0) watchlistService.refresh()
         else if (key === "r") portfolioService.refresh()
         else if (key === "w" || key === "m") root.activeTab = 0
         else if (key === "p") root.activeTab = 1
@@ -264,10 +290,12 @@ Panel {
           loading: watchlistService.loading
           message: watchlistService.message
           nowMs: root.nowMs
+          live: watchlistService.live
+          connecting: session.status === "starting"
           textColor: root.foreground
           panelFontFamily: root.fontFamily
           onGroupSelected: function(groupId) { watchlistService.selectGroup(groupId) }
-          onRefreshRequested: watchlistService.refresh()
+          onChartRequested: function(symbol) { watchlistService.requestChart(symbol) }
         }
 
         PortfolioView {
@@ -281,7 +309,8 @@ Panel {
           accentColor: Color.accent
           warningColor: root.urgent
           panelFontFamily: root.fontFamily
-          onRefreshRequested: portfolioService.refresh()
+          live: portfolioService.live
+          connecting: session.status === "starting"
         }
       }
     }

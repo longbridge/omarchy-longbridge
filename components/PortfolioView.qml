@@ -15,7 +15,8 @@ Column {
   property string bridgeMessage: ""
   property int selectedIndex: 0
   property bool detailOpen: false
-  signal refreshRequested()
+  property bool live: false
+  property bool connecting: false
 
   readonly property color dimColor: Qt.rgba(textColor.r, textColor.g, textColor.b, 0.58)
   readonly property real dayGain: Number(portfolio.dayGainValue || 0)
@@ -30,6 +31,7 @@ Column {
   spacing: Style.space(8)
 
   function alpha(color, opacity) { return Qt.rgba(color.r, color.g, color.b, opacity) }
+  function gainLossColor(value) { return Number(value || 0) < 0 ? root.lossColor : root.gainColor }
   function money(value, currency, compact) {
     var amount = Number(value || 0)
     var suffix = ""
@@ -53,7 +55,7 @@ Column {
     width: parent.width
     spacing: Style.space(8)
     Column {
-      width: Math.max(0, root.width - refreshButton.width - Style.space(8))
+      width: Math.max(0, root.width - liveIndicator.width - Style.space(8))
       spacing: 0
       Text {
         text: "All accounts"
@@ -69,16 +71,13 @@ Column {
         font.pixelSize: Style.font.caption
       }
     }
-    PanelActionButton {
-      id: refreshButton
-      iconText: "󰑐"
-      tooltipText: "Refresh"
-      foreground: root.textColor
-      fontFamily: root.panelFontFamily
-      size: Style.space(28)
-      bordered: false
-      enabled: !root.loading
-      onClicked: root.refreshRequested()
+    LiveIndicator {
+      id: liveIndicator
+      anchors.verticalCenter: parent.verticalCenter
+      textColor: root.textColor
+      panelFontFamily: root.panelFontFamily
+      live: root.live
+      connecting: root.connecting
     }
   }
 
@@ -94,7 +93,8 @@ Column {
     }
     Text {
       anchors.baseline: parent.children[0].baseline
-      text: root.signedMoney(root.dayGain, root.portfolio.currency, false) + " today"
+      text: root.signedMoney(root.dayGain, root.portfolio.currency, false) + " today · "
+        + root.signedMoney(root.totalGain, root.portfolio.currency, false) + " total"
       color: root.trendColor
       font.family: root.panelFontFamily
       font.pixelSize: Style.font.bodySmall
@@ -107,13 +107,14 @@ Column {
     spacing: Style.space(6)
     Repeater {
       model: [
-        { label: "CASH", value: root.money(root.portfolio.totalCash, root.portfolio.currency, true) },
-        { label: "MARKET", value: root.money(root.portfolio.marketValue, root.portfolio.currency, true) },
-        { label: "POSITIONS", value: String((root.portfolio.positions || []).length) }
+        { label: "P/L", value: root.signedMoney(root.totalGain, root.portfolio.currency, true), tint: root.gainLossColor(root.totalGain) },
+        { label: "TODAY P/L", value: root.signedMoney(root.dayGain, root.portfolio.currency, true), tint: root.gainLossColor(root.dayGain) },
+        { label: "CASH", value: root.money(root.portfolio.totalCash, root.portfolio.currency, true), tint: root.textColor },
+        { label: "MARKET", value: root.money(root.portfolio.marketValue, root.portfolio.currency, true), tint: root.textColor }
       ]
       Rectangle {
         required property var modelData
-        width: (root.width - Style.space(12)) / 3
+        width: (root.width - Style.space(18)) / 4
         implicitHeight: Style.space(46)
         radius: Style.cornerRadius
         color: root.alpha(root.textColor, 0.04)
@@ -123,7 +124,7 @@ Column {
           anchors.centerIn: parent
           spacing: 0
           Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.label; color: root.dimColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.caption; font.bold: true }
-          Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.value; color: root.textColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.bodySmall; font.bold: true }
+          Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.value; color: modelData.tint; font.family: root.panelFontFamily; font.pixelSize: Style.font.bodySmall; font.bold: true }
         }
       }
     }

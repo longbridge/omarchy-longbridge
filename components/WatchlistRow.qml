@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import qs.Commons
 
 Rectangle {
@@ -10,6 +11,7 @@ Rectangle {
   property bool selected: false
   property bool stale: false
   signal activated()
+  signal chartRequested(string symbol)
 
   readonly property color dimColor: Qt.rgba(textColor.r, textColor.g, textColor.b, 0.56)
   readonly property real lastValue: Number(quote.last || 0)
@@ -29,8 +31,8 @@ Rectangle {
   Column {
     anchors.left: parent.left
     anchors.leftMargin: Style.space(9)
-    anchors.right: priceColumn.left
-    anchors.rightMargin: Style.space(10)
+    anchors.right: chart.left
+    anchors.rightMargin: Style.space(8)
     anchors.verticalCenter: parent.verticalCenter
     spacing: Style.space(4)
 
@@ -53,11 +55,27 @@ Rectangle {
     }
   }
 
+  Sparkline {
+    id: chart
+    anchors.right: priceColumn.left
+    anchors.rightMargin: Style.space(10)
+    anchors.verticalCenter: parent.verticalCenter
+    width: Style.space(58)
+    height: Style.space(22)
+    series: root.quote.series || null
+    previousClose: root.previousValue
+    lineColor: root.movementColor
+    guideColor: root.textColor
+  }
+
   Column {
     id: priceColumn
     anchors.right: parent.right
     anchors.rightMargin: Style.space(9)
     anchors.verticalCenter: parent.verticalCenter
+    // Fixed so every row's chart starts at the same x: a price column that
+    // sizes to its own text would step the sparklines in and out per row.
+    width: Style.space(104)
     spacing: Style.space(4)
 
     Text {
@@ -71,12 +89,8 @@ Rectangle {
     Row {
       anchors.right: parent.right
       spacing: Style.space(5)
-      Text {
-        text: String(root.quote.currency || "")
-        color: root.dimColor
-        font.family: root.panelFontFamily
-        font.pixelSize: Style.font.caption
-      }
+      // Currency is a property of the security, not of this tick, and the
+      // market is already in the symbol — the detail view carries it instead.
       Text {
         text: root.quote.ready
           ? (root.changePercent > 0 ? "+" : root.changePercent < 0 ? "−" : "") + Math.abs(root.changePercent).toFixed(2) + "%"
@@ -86,15 +100,37 @@ Rectangle {
         font.pixelSize: Style.font.caption
         font.bold: true
       }
+      // A clock, not the word STALE: the row is narrow and this only says the
+      // last tick is old.
       Text {
         visible: root.stale
-        text: "STALE"
+        text: "󱎫"
         color: root.dimColor
         font.family: root.panelFontFamily
         font.pixelSize: Style.font.caption
+        ToolTip.visible: staleHover.hovered
+        ToolTip.text: "Last price is more than five minutes old"
+
+        HoverHandler { id: staleHover }
       }
     }
   }
+
+  // The row asks for its own line the first time it is drawn, so a group of
+  // hundreds only fetches what the list actually shows. Asking once per symbol
+  // is enough: `quote` is replaced on every tick, and re-asking then would fire
+  // this for every chart-less row twice a second.
+  property string chartAskedFor: ""
+
+  function askForChart() {
+    var symbol = String(root.quote && root.quote.symbol || "")
+    if (!symbol || symbol === chartAskedFor) return
+    chartAskedFor = symbol
+    root.chartRequested(symbol)
+  }
+
+  Component.onCompleted: askForChart()
+  onQuoteChanged: askForChart()
 
   HoverHandler { id: hover }
   TapHandler { onTapped: root.activated() }

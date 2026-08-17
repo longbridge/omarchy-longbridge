@@ -60,11 +60,63 @@ assert.deepStrictEqual(
     available_quantity: "4",
     cost_price: "10.25",
     last: "12.50",
+    prev_close: "0",
+    report_factor: "1",
     market_value: "62.5",
     total_gain: "2.25",
     day_gain: "0.50"
   }
 )
+
+// Live prices from the feed re-price rows and re-total the summary, so the
+// portfolio moves between snapshots without another CLI call.
+{
+  let live = context.applyEvent(context.initialState(), {
+    type: "portfolio",
+    currency: "USD",
+    net_assets: "1010.00",
+    market_value: "1000.00",
+    total_cash: "10.00",
+    total_gain: "100.00",
+    day_gain: "20.00",
+    positions: [
+      {
+        symbol: "AAPL.US", name: "Apple", currency: "USD", quantity: "10",
+        cost_price: "90.00", prev_close: "98.00", last: "100.00",
+        market_value: "1000.00", report_factor: "1"
+      },
+      {
+        symbol: "700.HK", name: "TENCENT", currency: "HKD", quantity: "100",
+        cost_price: "400.00", prev_close: "440.00", last: "450.00",
+        market_value: "45000.00", report_factor: "0.128"
+      }
+    ]
+  })
+
+  const unchanged = context.applyEvent(live, { type: "quotes", quotes: [{ symbol: "MSFT.US", last: "500" }] })
+  assert.strictEqual(unchanged, live)
+
+  live = context.applyEvent(live, {
+    type: "quotes",
+    quotes: [{ symbol: "AAPL.US", last: "110.00" }, { symbol: "700.HK", last: "460.00" }]
+  })
+
+  const apple = live.positions[0]
+  assert.strictEqual(apple.last, "110")
+  assert.strictEqual(apple.market_value, "1100.00")
+  assert.strictEqual(apple.day_gain, "120.00")
+  assert.strictEqual(apple.total_gain, "200.00")
+
+  // Report-currency totals fold each row through its own factor.
+  assert.strictEqual(live.marketValue, (1100 + 46000 * 0.128).toFixed(2))
+  assert.strictEqual(live.dayGainValue, (120 + 2000 * 0.128).toFixed(2))
+  assert.strictEqual(live.totalGainValue, (200 + 6000 * 0.128).toFixed(2))
+  assert.strictEqual(live.netAssets, (10 + 1100 + 46000 * 0.128).toFixed(2))
+
+  // A push with no usable price leaves the row alone.
+  const zeroed = context.applyEvent(live, { type: "quotes", quotes: [{ symbol: "AAPL.US", last: "0" }] })
+  assert.strictEqual(zeroed, live)
+}
 
 state = context.applyEvent(state, { type: "error", code: "portfolio_failed", message: "Could not load." })
 assert.strictEqual(state.error, "Could not load.")

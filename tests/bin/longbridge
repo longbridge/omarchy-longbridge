@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+"""Fake `longbridge serve` for QML tests.
+
+Speaks the same newline-delimited JSON-RPC 2.0 protocol as the real CLI and
+serves the fixtures in tests/fixtures. It never contacts Longbridge and never
+reads OAuth files.
+"""
+
+import json
+import os
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def fixture(name):
+    with open(os.path.join(ROOT, "fixtures", name), encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def send(payload):
+    sys.stdout.write(json.dumps(payload, separators=(",", ":")) + "\n")
+    sys.stdout.flush()
+
+
+def result_for(method, params):
+    if method == "initialize":
+        return {
+            "protocolVersion": "1",
+            "serverInfo": {"name": "longbridge-fake", "version": "0.0.0"},
+            "capabilities": {"subscribe": ["quote"]},
+            "methods": ["initialize", "quote.watchlist", "quote.quote", "quote.static_info", "quote.subscribe"],
+        }
+    if method == "quote.watchlist":
+        return fixture("rpc_watchlist.json")
+    if method == "quote.static_info":
+        wanted = set(params.get("symbols", []))
+        return [row for row in fixture("rpc_static_info.json") if row["symbol"] in wanted]
+    if method == "quote.quote":
+        wanted = set(params.get("symbols", []))
+        return [row for row in fixture("rpc_quote.json") if row["symbol"] in wanted]
+    if method in ("quote.subscribe", "quote.unsubscribe"):
+        return {"symbols": params.get("symbols", [])}
+    return None
+
+
+def main():
+    args = sys.argv[1:]
+    if "portfolio" in args:
+        with open(os.path.join(ROOT, "fixtures", "portfolio.json"), encoding="utf-8") as handle:
+            sys.stdout.write(handle.read())
+        return 0
+    if "serve" not in args:
+        sys.stderr.write("fake longbridge implements only `serve` and `portfolio`\n")
+        return 2
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        request = json.loads(line)
+        method = request.get("method", "")
+        params = request.get("params") or {}
+        result = result_for(method, params)
+        if result is None:
+            send({"jsonrpc": "2.0", "id": request.get("id"),
+                  "error": {"code": -32601, "message": "unknown method `%s`" % method}})
+            continue
+        send({"jsonrpc": "2.0", "id": request.get("id"), "result": result})
+        if method == "quote.subscribe":
+            for symbol in params.get("symbols", []):
+                send({"jsonrpc": "2.0", "method": "quote.updated", "params": {
+                    "symbol": symbol,
+                    "last_done": "999.000",
+                    "open": "998.000",
+                    "high": "999.500",
+                    "low": "997.000",
+                    "timestamp": "2026-08-17T07:36:17Z",
+                    "volume": 12345,
+                    "turnover": "12345000.000",
+                    "trade_status": "Normal",
+                    "trade_session": "Overnight",
+                }})
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
