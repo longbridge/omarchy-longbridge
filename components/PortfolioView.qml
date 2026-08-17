@@ -37,7 +37,10 @@ Column {
     var suffix = ""
     if (compact && Math.abs(amount) >= 1000000) { amount /= 1000000; suffix = "M" }
     else if (compact && Math.abs(amount) >= 1000) { amount /= 1000; suffix = "K" }
-    return String(currency || "") + " " + Math.abs(amount).toLocaleString(Qt.locale(), "f", compact ? 1 : 2) + suffix
+    // The tiles omit the currency: the header line and net assets already name
+    // it, and repeating it four times is what pushed this row over the edge.
+    var prefix = currency ? String(currency) + " " : ""
+    return prefix + Math.abs(amount).toLocaleString(Qt.locale(), "f", compact ? 1 : 2) + suffix
   }
   function signedMoney(value, currency, compact) {
     var amount = Number(value || 0)
@@ -81,25 +84,16 @@ Column {
     }
   }
 
-  Row {
+  // Net assets alone on this line. Both P/L figures sit in the tiles below, and
+  // spelling them out here too overran the panel at full precision.
+  Text {
     width: parent.width
-    spacing: Style.space(12)
-    Text {
-      text: root.money(root.portfolio.netAssets, root.portfolio.currency, false)
-      color: root.textColor
-      font.family: root.panelFontFamily
-      font.pixelSize: Style.font.title
-      font.bold: true
-    }
-    Text {
-      anchors.baseline: parent.children[0].baseline
-      text: root.signedMoney(root.dayGain, root.portfolio.currency, false) + " today · "
-        + root.signedMoney(root.totalGain, root.portfolio.currency, false) + " total"
-      color: root.trendColor
-      font.family: root.panelFontFamily
-      font.pixelSize: Style.font.bodySmall
-      font.bold: true
-    }
+    text: root.money(root.portfolio.netAssets, root.portfolio.currency, false)
+    color: root.textColor
+    font.family: root.panelFontFamily
+    font.pixelSize: Style.font.title
+    font.bold: true
+    elide: Text.ElideRight
   }
 
   Row {
@@ -107,10 +101,10 @@ Column {
     spacing: Style.space(6)
     Repeater {
       model: [
-        { label: "P/L", value: root.signedMoney(root.totalGain, root.portfolio.currency, true), tint: root.gainLossColor(root.totalGain) },
-        { label: "TODAY P/L", value: root.signedMoney(root.dayGain, root.portfolio.currency, true), tint: root.gainLossColor(root.dayGain) },
-        { label: "CASH", value: root.money(root.portfolio.totalCash, root.portfolio.currency, true), tint: root.textColor },
-        { label: "MARKET", value: root.money(root.portfolio.marketValue, root.portfolio.currency, true), tint: root.textColor }
+        { label: "P/L", value: root.signedMoney(root.totalGain, "", true), tint: root.gainLossColor(root.totalGain) },
+        { label: "TODAY P/L", value: root.signedMoney(root.dayGain, "", true), tint: root.gainLossColor(root.dayGain) },
+        { label: "CASH", value: root.money(root.portfolio.totalCash, "", true), tint: root.textColor },
+        { label: "MARKET", value: root.money(root.portfolio.marketValue, "", true), tint: root.textColor }
       ]
       Rectangle {
         required property var modelData
