@@ -35,6 +35,9 @@ Item {
   // list actually shows.
   property var charts: ({})
   property var chartWanted: []
+  // market -> minutes in its regular session, so a chart of a day in progress
+  // knows how much of the axis it should occupy.
+  property var sessionMinutes: ({})
   property int chartsInflight: 0
   readonly property int maxChartRequests: 3
   readonly property bool loading: inflight > 0
@@ -241,17 +244,29 @@ Item {
     chartsInflight++
     // Charts are decoration: a failure leaves the row without a line and is
     // never surfaced as a panel error.
-    session.call("quote.candlesticks", ChartAdapter.seriesParams(symbol), function(error, result) {
+    session.call("quote.intraday", ChartAdapter.seriesParams(symbol), function(error, result) {
       root.chartsInflight = Math.max(0, root.chartsInflight - 1)
       if (error) {
         // The session can go away mid-flight; keep the symbol so it is drawn
         // once the session is back rather than leaving that row bare forever.
         if (error.code === "disconnected") root.chartWanted = root.chartWanted.concat([symbol])
       } else {
-        var series = ChartAdapter.parseSeries(symbol, result)
+        var series = ChartAdapter.parseSeries(symbol, result, root.sessionMinutesFor(symbol))
         if (series) root.publishChart(symbol, series)
       }
       root.drainCharts()
+    })
+  }
+
+  function sessionMinutesFor(symbol) {
+    return sessionMinutes[ChartAdapter.marketOf(symbol)] || 0
+  }
+
+  function loadTradingSessions() {
+    if (!session || !session.ready) return
+    session.call("quote.trading_session", null, function(error, result) {
+      if (error) return
+      root.sessionMinutes = ChartAdapter.parseSessionMinutes(result)
     })
   }
 
@@ -421,6 +436,7 @@ Item {
     // watchlist edits, so it reloads once — on the event, not on a schedule.
     function onConnected() {
       root.quoteEvent({ type: "connection", state: "connected" })
+      root.loadTradingSessions()
       root.drainCharts()
       if (root.panelOpen && root.active && root.inflight === 0) Qt.callLater(root.refresh)
     }

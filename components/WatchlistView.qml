@@ -132,17 +132,27 @@ Column {
 
       Behavior on width { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
 
-      PanelActionButton {
+      // Painted with the dropdown's own fill and border spec, so the two
+      // controls beside each other read as one pair rather than a filled box
+      // next to an outline.
+      BorderSurface {
         id: searchButton
         anchors.fill: parent
         visible: !root.searchExpanded
-        iconText: "󰍉"
-        tooltipText: "Filter"
-        foreground: root.textColor
-        fontFamily: root.panelFontFamily
-        size: groupDropdown.height
-        bordered: true
-        onClicked: root.focusSearch()
+        radius: Style.cornerRadius
+        color: Style.controlFill(false, searchHover.hovered, root.textColor, Color.accent)
+        borderSpec: Border.controlSpec(searchHover.hovered ? "hover-cursor" : "normal", root.textColor, Color.accent)
+
+        Text {
+          anchors.centerIn: parent
+          text: "󰍉"
+          color: root.textColor
+          font.family: root.panelFontFamily
+          font.pixelSize: Style.font.icon
+        }
+
+        HoverHandler { id: searchHover; cursorShape: Qt.PointingHandCursor }
+        TapHandler { onTapped: root.focusSearch() }
       }
 
       TextField {

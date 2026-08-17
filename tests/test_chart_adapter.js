@@ -8,17 +8,13 @@ vm.createContext(context)
 vm.runInContext(source, context)
 const plain = value => JSON.parse(JSON.stringify(value))
 
-assert.deepStrictEqual(plain(context.seriesParams("AAPL.US")), {
-  symbol: "AAPL.US",
-  period: "5m",
-  count: 60,
-  adjust_type: "NoAdjust"
-})
+assert.deepStrictEqual(plain(context.seriesParams("AAPL.US")), { symbol: "AAPL.US" })
 
+// The session's minute line, as `quote.intraday` returns it.
 const bars = [
-  { close: "100.0", open: "99", high: "101", low: "98", volume: 10, timestamp: "2026-08-17T13:30:00Z" },
-  { close: "104.0", open: "100", high: "105", low: "100", volume: 12, timestamp: "2026-08-17T13:35:00Z" },
-  { close: "102.0", open: "104", high: "104", low: "101", volume: 8, timestamp: "2026-08-17T13:40:00Z" }
+  { price: "100.0", timestamp: "2026-08-17T13:30:00Z", volume: 10, turnover: "1000", avg_price: "100.0" },
+  { price: "104.0", timestamp: "2026-08-17T13:31:00Z", volume: 12, turnover: "1248", avg_price: "102.0" },
+  { price: "102.0", timestamp: "2026-08-17T13:32:00Z", volume: 8, turnover: "816", avg_price: "102.0" }
 ]
 const series = context.parseSeries("AAPL.US", bars)
 assert.strictEqual(series.symbol, "AAPL.US")
@@ -27,8 +23,8 @@ assert.strictEqual(series.min, 100)
 assert.strictEqual(series.max, 104)
 
 // Bars without a usable close are skipped; too few points is no chart at all.
-assert.deepStrictEqual(plain(context.parseSeries("X.US", [{ close: "1" }, { close: "0" }, { close: "3" }]).points), [1, 3])
-assert.strictEqual(context.parseSeries("X.US", [{ close: "1" }]), null)
+assert.deepStrictEqual(plain(context.parseSeries("X.US", [{ price: "1" }, { price: "0" }, { price: "3" }]).points), [1, 3])
+assert.strictEqual(context.parseSeries("X.US", [{ price: "1" }]), null)
 assert.strictEqual(context.parseSeries("X.US", []), null)
 assert.strictEqual(context.parseSeries("X.US", null), null)
 
@@ -57,10 +53,71 @@ assert.strictEqual(Math.round(context.baselineY(series, 20, 96)), 20)
 assert.strictEqual(context.baselineY(series, 20, 0), -1)
 
 // A flat series draws down the middle instead of dividing by a zero range.
-const flat = context.parseSeries("X.US", [{ close: "5" }, { close: "5" }])
+const flat = context.parseSeries("X.US", [{ price: "5" }, { price: "5" }])
 assert.deepStrictEqual(plain(context.plot(flat, 10, 20, 0)).map(point => point.y), [10, 10])
 assert.strictEqual(context.baselineY(flat, 20, 5), 10)
 
 assert.deepStrictEqual(plain(context.plot(null, 60, 20, 0)), [])
+
+// A full session is ~390 minutes; it is reduced for the row without losing the
+// ends, because the last point is the one the live price replaces.
+{
+  const minutes = []
+  for (let i = 0; i < 390; i++) minutes.push({ price: String(100 + i) })
+  const session = context.parseSeries("AAPL.US", minutes)
+  assert.ok(session.points.length <= 120)
+  assert.ok(session.points.length >= 90)
+  assert.strictEqual(session.points[0], 100)
+  assert.strictEqual(session.points[session.points.length - 1], 489)
+  assert.strictEqual(session.min, 100)
+  assert.strictEqual(session.max, 489)
+}
+
+// The axis is the market's whole session: a day still running fills only the
+// fraction of the width it has actually elapsed.
+{
+  const sessions = [{
+    market: "US",
+    trade_sessions: [
+      { begin_time: "04:00:00.0", end_time: "09:30:00.0", trade_session: "Pre" },
+      { begin_time: "09:30:00.0", end_time: "16:00:00.0", trade_session: "Intraday" },
+      { begin_time: "16:00:00.0", end_time: "20:00:00.0", trade_session: "Post" }
+    ]
+  }, {
+    market: "HK",
+    trade_sessions: [
+      { begin_time: "09:30:00.0", end_time: "12:00:00.0", trade_session: "Intraday" },
+      { begin_time: "13:00:00.0", end_time: "16:00:00.0", trade_session: "Intraday" }
+    ]
+  }]
+  const minutes = context.parseSessionMinutes(sessions)
+  assert.strictEqual(minutes.US, 390)
+  assert.strictEqual(minutes.HK, 330)
+  assert.deepStrictEqual(plain(context.parseSessionMinutes(null)), {})
+
+  assert.strictEqual(context.marketOf("TSLA.US"), "US")
+  assert.strictEqual(context.marketOf("600519.SH"), "CN")
+  assert.strictEqual(context.marketOf("000568.SZ"), "CN")
+
+  // Two hours into a US session: the line covers under a third of the box.
+  const partial = []
+  for (let i = 0; i < 120; i++) partial.push({ price: String(100 + i) })
+  const running = context.parseSeries("TSLA.US", partial, 390)
+  assert.strictEqual(running.points.length, 120)
+  assert.strictEqual(running.slots, 390)
+  const drawn = plain(context.plot(running, 300, 20, 0))
+  assert.strictEqual(Math.round(drawn[drawn.length - 1].x), 92)
+
+  // A finished session fills the width.
+  const full = []
+  for (let i = 0; i < 390; i++) full.push({ price: String(100 + i) })
+  const closed = context.parseSeries("TSLA.US", full, 390)
+  const filled = plain(context.plot(closed, 300, 20, 0))
+  assert.strictEqual(Math.round(filled[filled.length - 1].x), 300)
+
+  // A live price still lands on the last point, keeping the axis intact.
+  const advancedRunning = context.withLive(running, "500")
+  assert.strictEqual(advancedRunning.slots, 390)
+}
 
 console.log("chart adapter tests passed")
