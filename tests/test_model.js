@@ -101,21 +101,18 @@ test("partial snapshots preserve failed-symbol values and attach row errors", ()
   assert.equal(Model.rows(state)[1].errorMessage, "")
 })
 
-test("flat rows follow terminal ordering: trading first, then market", () => {
+test("flat rows are grouped by market and hold their order", () => {
   let state = Model.initialState(["D05.SG", "AAPL.US", "700.HK"])
   state = Model.applyEvent(state, {
     type: "snapshot",
     quotes: [{ symbol: "AAPL.US", last: "1", prev_close: "1", timestamp: 100 }],
     errors: []
   })
-  // No session yet counts as Intraday, as in the terminal, so market priority
-  // decides and nothing is pushed to the bottom.
   assert.deepEqual(Model.rows(state).map(row => row.symbol), ["AAPL.US", "700.HK", "D05.SG"])
 
-  // A push outside regular hours sinks that symbol below every trading one,
-  // whatever its market — this is why SPY trails D05.SG in the terminal.
+  // Sessions come and go with the market; the list does not move with them.
   state = Model.applyEvent(state, { type: "quote", symbol: "AAPL.US", trade_session: "Overnight" })
-  assert.deepEqual(Model.rows(state).map(row => row.symbol), ["700.HK", "D05.SG", "AAPL.US"])
+  assert.deepEqual(Model.rows(state).map(row => row.symbol), ["AAPL.US", "700.HK", "D05.SG"])
 })
 
 test("rows are grouped in US, HK, CN, SG order", () => {
@@ -156,8 +153,8 @@ test("stale state and decimal formatting are derived from literal timestamps", (
   assert.equal(Model.formatPercent("-1.234"), "−1.23%")
 })
 
-// Watchlist ordering mirrors longbridge-terminal src/data/watchlist.rs:
-// trading symbols first, then US, HK, SH/SZ, SG, stable within a key.
+// Grouped US, HK, SH/SZ, SG — stable within a market, and unaffected by which
+// symbols happen to be pushing outside regular hours.
 {
   const ordered = Model.orderedRows([
     { symbol: "D05.SG", trade_session: "Intraday" },
@@ -169,10 +166,7 @@ test("stale state and decimal formatting are derived from literal timestamps", (
     { symbol: "TSLA.US", trade_session: "Intraday" }
   ])
   assert.deepStrictEqual(ordered.map(row => row.symbol), [
-    // Normal trading session first, by market priority…
-    "NVDA.US", "TSLA.US", "700.HK", "600519.SH", "D05.SG",
-    // …then everything else, same market order.
-    "AAPL.US", "9988.HK"
+    "AAPL.US", "NVDA.US", "TSLA.US", "700.HK", "9988.HK", "600519.SH", "D05.SG"
   ])
   assert.strictEqual(Model.marketPriority("AAPL.US"), 0)
   assert.strictEqual(Model.marketPriority("700.HK"), 1)
@@ -180,8 +174,7 @@ test("stale state and decimal formatting are derived from literal timestamps", (
   assert.strictEqual(Model.marketPriority("D05.SG"), 3)
   assert.strictEqual(Model.marketPriority("BTCUSD.HAS"), 99)
 
-  // A row with no quote yet counts as Intraday, so market priority decides,
-  // and duplicates collapse.
+  // Duplicates collapse, and market priority decides.
   const state = Model.applyGroups(Model.initialState([]), [{
     id: "1",
     name: "all",
@@ -191,10 +184,6 @@ test("stale state and decimal formatting are derived from literal timestamps", (
   }], "1")
   const live = Model.applyEvent(state, { type: "quote", symbol: "700.HK", trade_session: "Intraday", last: "448.40" })
   assert.deepStrictEqual(Model.rows(live).map(row => row.symbol), ["AAPL.US", "700.HK"])
-
-  // Once 700.HK ticks in a post session it drops below the untouched US row.
-  const post = Model.applyEvent(live, { type: "quote", symbol: "700.HK", trade_session: "Post" })
-  assert.deepStrictEqual(Model.rows(post).map(row => row.symbol), ["AAPL.US", "700.HK"])
 }
 
 console.log("model ordering tests passed")

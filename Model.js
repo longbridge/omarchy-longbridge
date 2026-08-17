@@ -164,23 +164,21 @@ function marketPriority(symbol) {
   return 99
 }
 
-// Mirrors the terminal's watchlist ordering (longbridge-terminal
-// src/data/watchlist.rs): symbols in their normal trading session first, then
-// by market, and stable within a key so equal rows keep the order Longbridge
-// returned rather than picking up an arbitrary alphabetical tiebreaker.
+// Mirrors what the terminal's watchlist actually shows: grouped by market —
+// US, HK, Shanghai and Shenzhen, Singapore — and stable within a market, so
+// rows keep the order Longbridge returned instead of picking up an alphabetical
+// tiebreaker. The API interleaves markets, which is why the grouping is done
+// here rather than taken as given.
 //
-// A row without a session yet counts as Intraday, matching the terminal, where
-// trade_session defaults to Intraday and only a push moves it. So a symbol
-// falls to the bottom only when it actually ticks outside regular hours — an
-// overnight-eligible name during the overnight session, say — while the rest of
-// its market holds its place.
+// Deliberately not sorted by trading session. The terminal's sort has such a
+// key, but it reads a session that only a WebSocket push sets, so in practice
+// it sinks whichever symbols happened to tick — one row on the same watchlist
+// this panel renders. Ordering that shuffles with the arrival of pushes is
+// worse than ordering that holds still.
 function orderedRows(rows) {
   var indices = []
   for (var i = 0; i < rows.length; i++) indices.push(i)
   indices.sort(function(a, b) {
-    var notTradingA = rows[a].trade_session && rows[a].trade_session !== "Intraday" ? 1 : 0
-    var notTradingB = rows[b].trade_session && rows[b].trade_session !== "Intraday" ? 1 : 0
-    if (notTradingA !== notTradingB) return notTradingA - notTradingB
     var marketA = marketPriority(rows[a].symbol)
     var marketB = marketPriority(rows[b].symbol)
     if (marketA !== marketB) return marketA - marketB

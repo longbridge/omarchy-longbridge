@@ -195,10 +195,12 @@ Panel {
           LongbridgeLogo {
             id: headerLogo
             anchors.left: parent.left
-            anchors.verticalCenter: parent.verticalCenter
-            // Sized off the wordmark it sits beside, so the mark reads as one
-            // line of type rather than a badge next to it.
-            width: Math.round(headerIdentityText.font.pixelSize * 1.15)
+            // Shares the tab strip's baseline, so mark, wordmark and tabs all
+            // end on the same line.
+            anchors.bottom: tabSegments.bottom
+            // A little under the tab strip's height: matching it exactly made
+            // the mark heavier than the word beside it.
+            width: Math.round(tabSegments.height * 0.78)
             height: width
             foregroundColor: root.foreground
             brandColors: true
@@ -219,7 +221,7 @@ Panel {
             text: "Longbridge"
             color: root.foreground
             font.family: root.fontFamily
-            font.pixelSize: Style.font.title
+            font.pixelSize: Style.font.heading
             font.bold: true
             elide: Text.ElideRight
           }
