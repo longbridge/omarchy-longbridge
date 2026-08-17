@@ -20,6 +20,9 @@ Column {
   property bool live: false
   property bool connecting: false
   property alias filterText: searchField.text
+  // Collapsed to an icon until asked for: the filter is used occasionally, and
+  // an empty box sitting in the header is a permanent reminder of that.
+  property bool searchExpanded: false
   readonly property bool searching: searchField.activeFocus
   signal groupSelected(string groupId)
   signal chartRequested(string symbol)
@@ -60,6 +63,7 @@ Column {
   Component.onCompleted: syncRows()
 
   function focusSearch() {
+    searchExpanded = true
     searchField.forceActiveFocus()
     searchField.selectAll()
   }
@@ -67,6 +71,15 @@ Column {
   function clearSearch() {
     searchField.text = ""
     searchField.focus = false
+    searchExpanded = false
+  }
+
+  // Anything else the reader touches puts the box away, as long as they are not
+  // in the middle of a filter — a live filter stays open so the short list has
+  // a visible reason.
+  function releaseSearch() {
+    searchField.focus = false
+    if (searchField.text === "") searchExpanded = false
   }
 
   function moveSelection(delta) {
@@ -106,52 +119,79 @@ Column {
       onChanged: function(value) {
         root.selectedIndex = 0
         root.detailOpen = false
+        root.releaseSearch()
         root.groupSelected(value)
       }
     }
-    TextField {
-      id: searchField
-      width: Style.space(124)
+    // One slot in the row: a search button, or the field it opens into.
+    Item {
+      id: searchSlot
+      width: root.searchExpanded ? Style.space(124) : groupDropdown.height
       height: groupDropdown.height
       anchors.verticalCenter: parent.verticalCenter
-      placeholderText: "Filter"
-      foreground: root.textColor
-      font.family: root.panelFontFamily
-      font.pixelSize: Style.font.caption
-      rightPadding: clearButton.width + Style.space(6)
-      onTextChanged: {
-        root.selectedIndex = 0
-        root.detailOpen = false
-      }
-      Keys.onEscapePressed: function(event) {
-        root.clearSearch()
-        event.accepted = true
+
+      Behavior on width { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+
+      PanelActionButton {
+        id: searchButton
+        anchors.fill: parent
+        visible: !root.searchExpanded
+        iconText: "󰍉"
+        tooltipText: "Filter"
+        foreground: root.textColor
+        fontFamily: root.panelFontFamily
+        size: groupDropdown.height
+        bordered: true
+        onClicked: root.focusSearch()
       }
 
-      // Only offered once there is something to clear, so the field stays quiet
-      // while empty.
-      Text {
-        id: clearButton
-        anchors.right: parent.right
-        anchors.rightMargin: Style.space(7)
-        anchors.verticalCenter: parent.verticalCenter
-        visible: searchField.text !== ""
-        text: "✕"
-        color: clearHover.hovered
-          ? root.textColor
-          : Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.55)
+      TextField {
+        id: searchField
+        anchors.fill: parent
+        visible: root.searchExpanded
+        placeholderText: "Filter"
+        foreground: root.textColor
         font.family: root.panelFontFamily
         font.pixelSize: Style.font.caption
+        rightPadding: clearButton.width + Style.space(6)
+        onTextChanged: {
+          root.selectedIndex = 0
+          root.detailOpen = false
+        }
+        // Giving up focus with nothing typed puts the header back the way it
+        // was; a live filter keeps the box open so the reader can see why the
+        // list is short.
+        onActiveFocusChanged: if (!activeFocus && text === "") root.searchExpanded = false
+        Keys.onEscapePressed: function(event) {
+          root.clearSearch()
+          event.accepted = true
+        }
 
-        HoverHandler { id: clearHover; cursorShape: Qt.PointingHandCursor }
-        TapHandler { onTapped: root.clearSearch() }
+        // Only offered once there is something to clear, so the field stays quiet
+        // while empty.
+        Text {
+          id: clearButton
+          anchors.right: parent.right
+          anchors.rightMargin: Style.space(7)
+          anchors.verticalCenter: parent.verticalCenter
+          visible: searchField.text !== ""
+          text: "✕"
+          color: clearHover.hovered
+            ? root.textColor
+            : Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.55)
+          font.family: root.panelFontFamily
+          font.pixelSize: Style.font.caption
+
+          HoverHandler { id: clearHover; cursorShape: Qt.PointingHandCursor }
+          TapHandler { onTapped: root.clearSearch() }
+        }
       }
     }
 
     // Holds the live indicator against the right edge while the filter stays
     // beside the group dropdown.
     Item {
-      width: Math.max(0, parent.width - groupDropdown.width - searchField.width
+      width: Math.max(0, parent.width - groupDropdown.width - searchSlot.width
         - liveIndicator.width - parent.spacing * 3)
       height: 1
     }
@@ -188,6 +228,9 @@ Column {
     border.color: Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.10)
     clip: true
 
+    // A tap anywhere in the list area, row or gap, closes the filter box.
+    TapHandler { onTapped: root.releaseSearch() }
+
     ListView {
       id: quoteList
       anchors.fill: parent
@@ -207,6 +250,7 @@ Column {
         stale: quote.ready && Number(quote.timestamp || 0) > 0
           && root.nowMs - Number(quote.timestamp) * 1000 > 300000
         onActivated: {
+          root.releaseSearch()
           root.selectedIndex = index
           root.detailOpen = true
         }

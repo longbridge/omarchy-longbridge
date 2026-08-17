@@ -207,14 +207,17 @@ Panel {
             anchors.leftMargin: Style.space(8)
             anchors.right: tabSegments.left
             anchors.rightMargin: Style.space(9)
-            anchors.verticalCenter: parent.verticalCenter
+            // Sits on the logo's baseline rather than the row's middle, so the
+            // second line ends where the mark does.
+            anchors.bottom: headerLogo.bottom
+            anchors.bottomMargin: -Style.space(2)
             spacing: Style.space(1)
             Text {
               width: parent.width
               text: "Longbridge"
               color: root.foreground
               font.family: root.fontFamily
-              font.pixelSize: Style.font.body
+              font.pixelSize: Style.font.title
               font.bold: true
               elide: Text.ElideRight
             }

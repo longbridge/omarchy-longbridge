@@ -104,34 +104,25 @@ Column {
     var amount = Number(value || 0)
     return (amount > 0 ? "+" : amount < 0 ? "−" : "") + money(amount, currency, compact)
   }
-  function relativeTime(timestamp) {
-    if (!timestamp) return "waiting"
-    var seconds = Math.max(0, Date.now() / 1000 - Number(timestamp))
-    if (seconds < 60) return "just now"
-    if (seconds < 3600) return Math.floor(seconds / 60) + "m ago"
-    return Math.floor(seconds / 3600) + "h ago"
-  }
 
+  // Total assets is the headline; the account label and the "updated" line said
+  // less than the number itself, and the live indicator already reports whether
+  // it is current.
   Row {
     width: parent.width
     spacing: Style.space(8)
-    Column {
+
+    Text {
       width: Math.max(0, root.width - liveIndicator.width - Style.space(8))
-      spacing: 0
-      Text {
-        text: "All accounts"
-        color: root.textColor
-        font.family: root.panelFontFamily
-        font.pixelSize: Style.font.body
-        font.bold: true
-      }
-      Text {
-        text: "Updated " + root.relativeTime(root.portfolio.updatedAt) + " · " + root.portfolio.currency
-        color: root.dimColor
-        font.family: root.panelFontFamily
-        font.pixelSize: Style.font.caption
-      }
+      anchors.verticalCenter: parent.verticalCenter
+      text: root.money(root.portfolio.netAssets, root.portfolio.currency, false)
+      color: root.textColor
+      font.family: root.panelFontFamily
+      font.pixelSize: Style.font.title
+      font.bold: true
+      elide: Text.ElideRight
     }
+
     LiveIndicator {
       id: liveIndicator
       anchors.verticalCenter: parent.verticalCenter
@@ -140,18 +131,6 @@ Column {
       live: root.live
       connecting: root.connecting
     }
-  }
-
-  // Net assets alone on this line. Both P/L figures sit in the tiles below, and
-  // spelling them out here too overran the panel at full precision.
-  Text {
-    width: parent.width
-    text: root.money(root.portfolio.netAssets, root.portfolio.currency, false)
-    color: root.textColor
-    font.family: root.panelFontFamily
-    font.pixelSize: Style.font.title
-    font.bold: true
-    elide: Text.ElideRight
   }
 
   // P/L and today's P/L get a line to themselves, at full precision: they are

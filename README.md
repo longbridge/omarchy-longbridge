@@ -70,7 +70,7 @@ Pushes are folded per symbol and applied every 500ms — a render tick, not a fe
 
 Rows are ordered the way Longbridge Terminal orders them (`src/data/watchlist.rs`): symbols in their normal trading session first, then by market — US, HK, Shanghai and Shenzhen, Singapore — and stable within a key, so equal rows keep the order Longbridge returned rather than picking up an alphabetical tiebreaker. A symbol whose market opens therefore rises to the top on its own. Failures retain the last available membership and prices, and a dropped server is restarted with backoff.
 
-A filter box sits beside the group dropdown, at the same height, and narrows the loaded group as you type. Matching is case-insensitive across both symbol and name, so `tsm`, `TSM.US` and `taiwan` all reach the same row. Filtering is display-only — every symbol in the group stays subscribed — and the count line reads `12 of 54 symbols` while a filter is active. Press `/` or `F` to jump to the box, `Esc` or the `✕` inside it to clear.
+A filter sits beside the group dropdown as a search button, expanding into a box at the same height when clicked or when `/` or `F` is pressed. It narrows the loaded group as you type, and closes again when you click elsewhere with nothing typed — a live filter stays open, so a short list always shows its reason. Matching is case-insensitive across both symbol and name, so `tsm`, `TSM.US` and `taiwan` all reach the same row. Filtering is display-only — every symbol in the group stays subscribed — and the count line reads `12 of 54 symbols` while a filter is active. `Esc` or the `✕` inside the box clears it.
 
 The list is keyed by symbol, so a price tick updates the rows in place rather than rebuilding them. Handing a fresh row array to the list on every push destroyed and recreated every delegate twice a second, which flickered the charts and jumped the scroll position while charts were still loading.
 
@@ -90,7 +90,7 @@ Positions, cash and the account overview stay on the CLI: `serve` returns raw Op
 
 Prices do not. The holdings are registered on the same quote feed as the watchlist, so market value, day P/L and total P/L move with the market between snapshots. A row is repriced in its own currency; the summary re-totals through the rate implied by each holding's `market_value` and `market_value_usd` pair, which the snapshot already carries, so no exchange-rate lookup has to be kept fresh. The snapshot itself is re-read when the tab is opened or the session reconnects — never on a timer.
 
-The summary states net assets with both figures beside it — today's P/L and total P/L — and repeats them as their own tiles alongside cash and market value, tinted by sign. Holdings use a bounded list with its own scrollbar. Each 44-unit row shows market value and today's movement; quantity, available quantity, market price, average cost, total P/L, and currency appear in selected-row detail.
+Total assets is the headline, with the live indicator beside it. Today's P/L and total P/L take a line of their own at full precision, over an allocation bar by market and cash, then cash, market value, risk level and credit limit. Holdings use a bounded list with its own scrollbar. Each 44-unit row shows market value and today's movement; quantity, available quantity, market price, average cost, total P/L, and currency appear in selected-row detail.
 
 ## Resource menu
 

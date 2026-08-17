@@ -50,6 +50,11 @@ grep -F 'placeholderText: "Filter"' components/WatchlistView.qml >/dev/null
 grep -F 'model: root.rowKeys' components/WatchlistView.qml >/dev/null
 grep -F 'quote: root.rowFor(modelData)' components/WatchlistView.qml >/dev/null
 grep -F 'id: clearButton' components/WatchlistView.qml >/dev/null
+# The filter is a button until it is asked for, and anything else closes it.
+grep -F 'id: searchButton' components/WatchlistView.qml >/dev/null
+grep -F 'property bool searchExpanded: false' components/WatchlistView.qml >/dev/null
+grep -F 'function releaseSearch()' components/WatchlistView.qml >/dev/null
+! grep -F 'text: "All accounts"' components/PortfolioView.qml
 # Rows are narrow: no currency column, and the stale marker is a glyph.
 ! grep -F 'text: "STALE"' components/WatchlistRow.qml
 ! grep -F 'root.quote.currency' components/WatchlistRow.qml
