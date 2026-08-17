@@ -25,17 +25,11 @@ omarchy plugin add https://github.com/longbridge/omarchy-longbridge.git --enable
 Open Longbridge from the bar. The welcome page will:
 
 1. Check whether Longbridge Terminal is installed.
-2. Offer **Install Longbridge CLI** when it is missing.
+2. Link to the official Longbridge CLI installation guide when it is missing.
 3. Offer **Log in to Longbridge** after installation.
 4. Verify the session with `longbridge check --format json`.
 
-The install action runs the official command only after you click it:
-
-```bash
-curl -sSL https://github.com/longbridge/longbridge-terminal/raw/main/install | sh
-```
-
-See the [Longbridge CLI documentation](https://open.longbridge.com/docs/cli/) for manual installation and troubleshooting.
+The plugin does not download or execute an installer. Use the [Longbridge CLI documentation](https://open.longbridge.com/docs/cli/) to choose an installation method and for troubleshooting.
 
 For development, symlink this checkout into Omarchy:
 

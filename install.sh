@@ -31,7 +31,6 @@ done
 
 command -v longbridge >/dev/null 2>&1 || {
   printf '%s\n' 'longbridge is required. Install Longbridge Terminal:' >&2
-  printf '%s\n' 'curl -sSL https://github.com/longbridge/longbridge-terminal/raw/main/install | sh' >&2
   printf '%s\n' 'https://open.longbridge.com/docs/cli/' >&2
   exit 1
 }

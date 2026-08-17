@@ -4,8 +4,8 @@ function availabilityCommand() {
   return ["sh", "-lc", "command -v longbridge"]
 }
 
-function installCommand() {
-  return ["sh", "-lc", "curl -sSL https://github.com/longbridge/longbridge-terminal/raw/main/install | sh"]
+function installDocsUrl() {
+  return "https://open.longbridge.com/docs/cli/"
 }
 
 function loginCommand() {

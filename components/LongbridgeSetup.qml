@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import qs.Commons
 import qs.Ui
@@ -17,9 +18,9 @@ Column {
   property string message: "Checking Longbridge…"
   readonly property bool ready: setupState === "ready"
   readonly property bool showingInstall: previewInstallGuide
-    || setupState === "needs_install" || setupState === "install_failed"
-  readonly property bool busy: availabilityProcess.running || installProcess.running
-    || loginProcess.running || verifyProcess.running
+    || setupState === "needs_install"
+  readonly property bool busy: availabilityProcess.running || loginProcess.running
+    || verifyProcess.running
   signal setupCompleted()
   signal dismissed()
 
@@ -35,11 +36,8 @@ Column {
   }
 
   function installCli() {
-    if (busy) return
-    setupState = "installing"
-    message = "Installing Longbridge CLI…"
-    installProcess.command = SetupAdapter.installCommand()
-    installProcess.running = true
+    Quickshell.execDetached(["xdg-open", SetupAdapter.installDocsUrl()])
+    message = "Install Longbridge CLI from the official guide, then try again."
   }
 
   function login() {
@@ -126,7 +124,7 @@ Column {
       Text {
         width: parent.width
         visible: root.showingInstall
-        text: "Installer source: github.com/longbridge/longbridge-terminal"
+        text: "Official guide: open.longbridge.com/docs/cli/"
         color: Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.58)
         font.family: root.panelFontFamily
         font.pixelSize: Style.font.caption
@@ -142,7 +140,7 @@ Column {
       }
       Button {
         visible: root.showingInstall
-        text: "Install Longbridge CLI"
+        text: "Open installation guide"
         foreground: root.textColor
         bordered: true
         enabled: !root.busy
@@ -189,21 +187,6 @@ Column {
         root.cliInstalled = false
         root.setupState = "needs_install"
         root.message = "Longbridge CLI is required before this plugin can be used."
-      }
-    }
-  }
-
-  Process {
-    id: installProcess
-    running: false
-    command: []
-    stdout: StdioCollector { waitForEnd: true }
-    stderr: StdioCollector { waitForEnd: true }
-    onExited: function(exitCode) {
-      if (exitCode === 0) root.checkAvailability()
-      else {
-        root.setupState = "install_failed"
-        root.message = "Longbridge CLI installation failed. Try again."
       }
     }
   }
