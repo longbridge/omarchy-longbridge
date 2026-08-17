@@ -96,19 +96,19 @@ Column {
     elide: Text.ElideRight
   }
 
+  // P/L and today's P/L get a line to themselves, at full precision: they are
+  // the two numbers this tab exists for. Cash and market value follow.
   Row {
     width: parent.width
     spacing: Style.space(6)
     Repeater {
       model: [
-        { label: "P/L", value: root.signedMoney(root.totalGain, "", true), tint: root.gainLossColor(root.totalGain) },
-        { label: "TODAY P/L", value: root.signedMoney(root.dayGain, "", true), tint: root.gainLossColor(root.dayGain) },
-        { label: "CASH", value: root.money(root.portfolio.totalCash, "", true), tint: root.textColor },
-        { label: "MARKET", value: root.money(root.portfolio.marketValue, "", true), tint: root.textColor }
+        { label: "P/L", value: root.signedMoney(root.totalGain, root.portfolio.currency, false), tint: root.gainLossColor(root.totalGain) },
+        { label: "TODAY P/L", value: root.signedMoney(root.dayGain, root.portfolio.currency, false), tint: root.gainLossColor(root.dayGain) }
       ]
       Rectangle {
         required property var modelData
-        width: (root.width - Style.space(18)) / 4
+        width: (root.width - Style.space(6)) / 2
         implicitHeight: Style.space(46)
         radius: Style.cornerRadius
         color: root.alpha(root.textColor, 0.04)
@@ -118,7 +118,34 @@ Column {
           anchors.centerIn: parent
           spacing: 0
           Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.label; color: root.dimColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.caption; font.bold: true }
-          Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.value; color: modelData.tint; font.family: root.panelFontFamily; font.pixelSize: Style.font.bodySmall; font.bold: true }
+          Text { anchors.horizontalCenter: parent.horizontalCenter; text: modelData.value; color: modelData.tint; font.family: root.panelFontFamily; font.pixelSize: Style.font.body; font.bold: true }
+        }
+      }
+    }
+  }
+
+  Row {
+    width: parent.width
+    spacing: Style.space(6)
+    Repeater {
+      model: [
+        { label: "CASH", value: root.money(root.portfolio.totalCash, "", true) },
+        { label: "MARKET", value: root.money(root.portfolio.marketValue, "", true) },
+        { label: "POSITIONS", value: String((root.portfolio.positions || []).length) }
+      ]
+      Rectangle {
+        required property var modelData
+        width: (root.width - Style.space(12)) / 3
+        implicitHeight: Style.space(34)
+        radius: Style.cornerRadius
+        color: root.alpha(root.textColor, 0.025)
+        border.width: 1
+        border.color: root.alpha(root.textColor, 0.10)
+        Row {
+          anchors.centerIn: parent
+          spacing: Style.space(5)
+          Text { anchors.verticalCenter: parent.verticalCenter; text: modelData.label; color: root.dimColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.caption }
+          Text { anchors.verticalCenter: parent.verticalCenter; text: modelData.value; color: root.textColor; font.family: root.panelFontFamily; font.pixelSize: Style.font.caption; font.bold: true }
         }
       }
     }
