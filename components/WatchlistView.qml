@@ -98,7 +98,7 @@ Column {
     }
     TextField {
       id: searchField
-      width: Style.space(150)
+      width: Style.space(104)
       height: groupDropdown.height
       anchors.verticalCenter: parent.verticalCenter
       placeholderText: "Filter"
