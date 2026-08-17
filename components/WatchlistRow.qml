@@ -43,11 +43,17 @@ Rectangle {
       font.family: root.panelFontFamily
       font.pixelSize: Style.font.bodySmall
       font.bold: true
+      font.capitalization: Font.AllUppercase
       elide: Text.ElideRight
     }
+    // The name is uppercased, the error and the placeholder are not: those are
+    // sentences, and shouting them reads as a fault rather than a label.
     Text {
       width: parent.width
-      text: root.quote.errorMessage || String(root.quote.name || (root.quote.ready ? "" : "Waiting for quote…"))
+      text: root.quote.errorMessage
+        || (root.quote.name
+          ? String(root.quote.name).toUpperCase()
+          : (root.quote.ready ? "" : "Waiting for quote…"))
       color: root.dimColor
       font.family: root.panelFontFamily
       font.pixelSize: Style.font.caption

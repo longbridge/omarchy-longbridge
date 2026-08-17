@@ -84,7 +84,9 @@ Column {
 
     Dropdown {
       id: groupDropdown
-      width: Style.space(112)
+      // Group names are short ("all", "holdings"); the filter gets the wider box
+      // because that is where text is actually typed.
+      width: Style.space(92)
       showLabel: false
       value: root.activeGroupId
       options: root.groupOptions
@@ -98,7 +100,7 @@ Column {
     }
     TextField {
       id: searchField
-      width: Style.space(104)
+      width: Style.space(124)
       height: groupDropdown.height
       anchors.verticalCenter: parent.verticalCenter
       placeholderText: "Filter"
@@ -152,13 +154,12 @@ Column {
     }
   }
 
+  // Only speaks up when there is something to say: the row count was noise
+  // next to a list that already shows it.
   Text {
     width: parent.width
-    text: root.loading && root.rows.length === 0
-      ? "Refreshing…"
-      : (root.message || (root.visibleRows.length === root.rows.length
-        ? root.rows.length + " symbols"
-        : root.visibleRows.length + " of " + root.rows.length + " symbols"))
+    visible: text !== ""
+    text: root.loading && root.rows.length === 0 ? "Refreshing…" : root.message
     color: root.dimColor
     font.family: root.panelFontFamily
     font.pixelSize: Style.font.caption
