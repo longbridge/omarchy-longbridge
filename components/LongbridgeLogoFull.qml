@@ -10,8 +10,11 @@ Item {
 
   required property color foreground
   property string fontFamily: Style.font.family
-  property real markSize: Style.space(22)
   property int fontSize: Style.font.heading
+  // Tied to the wordmark rather than to whatever sits beside it: the mark is a
+  // letterform here, so it scales with the type it is set with. Matching a
+  // control's box height instead made it read as a badge.
+  property real markSize: Math.round(fontSize * 1.08)
   property real gap: Style.space(8)
   property bool brandColors: true
   property string label: "Longbridge"

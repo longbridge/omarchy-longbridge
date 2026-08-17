@@ -201,8 +201,6 @@ Panel {
             anchors.bottom: tabSegments.bottom
             foreground: root.foreground
             fontFamily: root.fontFamily
-            // The lockup stands exactly as tall as the tab strip opposite it.
-            markSize: tabSegments.height
           }
 
           PanelMenu {
