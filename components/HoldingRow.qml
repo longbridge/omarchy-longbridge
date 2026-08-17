@@ -47,16 +47,29 @@ Rectangle {
     anchors.verticalCenter: parent.verticalCenter
     spacing: Style.space(4)
 
-    // Symbol, then the position. The name is not repeated here — it is in the
-    // detail, and dropping it leaves quantity and cost a line of their own.
-    Text {
+    // Symbol keeps its full width and the name takes whatever is left, elided:
+    // quantity and cost still get a line of their own below, which is what
+    // crowding them onto this one cost.
+    Row {
       width: parent.width
-      text: String(root.holding.symbol || "")
-      color: root.textColor
-      font.family: root.panelFontFamily
-      font.pixelSize: Style.font.bodySmall
-      font.bold: true
-      elide: Text.ElideRight
+      spacing: Style.space(6)
+      Text {
+        id: symbolText
+        text: String(root.holding.symbol || "")
+        color: root.textColor
+        font.family: root.panelFontFamily
+        font.pixelSize: Style.font.bodySmall
+        font.bold: true
+      }
+      Text {
+        width: Math.max(0, parent.width - symbolText.width - parent.spacing)
+        anchors.baseline: symbolText.baseline
+        text: String(root.holding.name || "")
+        color: root.dimColor
+        font.family: root.panelFontFamily
+        font.pixelSize: Style.font.caption
+        elide: Text.ElideRight
+      }
     }
 
     Text {
