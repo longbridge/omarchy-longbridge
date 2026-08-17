@@ -31,7 +31,7 @@ done
 
 command -v longbridge >/dev/null 2>&1 || {
   printf '%s\n' 'longbridge is required. Install Longbridge Terminal:' >&2
-  printf '%s\n' 'https://open.longbridge.com/docs/cli/' >&2
+  printf '%s\n' 'https://open.longbridge.com/docs/cli/install' >&2
   exit 1
 }
 command -v omarchy >/dev/null 2>&1 || {

@@ -5,7 +5,7 @@ function availabilityCommand() {
 }
 
 function installDocsUrl() {
-  return "https://open.longbridge.com/docs/cli/"
+  return "https://open.longbridge.com/docs/cli/install"
 }
 
 function loginCommand() {

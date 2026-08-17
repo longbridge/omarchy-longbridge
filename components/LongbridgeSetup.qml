@@ -124,7 +124,7 @@ Column {
       Text {
         width: parent.width
         visible: root.showingInstall
-        text: "Official guide: open.longbridge.com/docs/cli/"
+        text: "Official guide: open.longbridge.com/docs/cli/install"
         color: Qt.rgba(root.textColor.r, root.textColor.g, root.textColor.b, 0.58)
         font.family: root.panelFontFamily
         font.pixelSize: Style.font.caption

@@ -8,7 +8,7 @@ vm.createContext(context)
 vm.runInContext(source, context)
 
 assert.deepStrictEqual(Array.from(context.availabilityCommand()), ["sh", "-lc", "command -v longbridge"])
-assert.strictEqual(context.installDocsUrl(), "https://open.longbridge.com/docs/cli/")
+assert.strictEqual(context.installDocsUrl(), "https://open.longbridge.com/docs/cli/install")
 assert.strictEqual(context.installCommand, undefined)
 assert.deepStrictEqual(Array.from(context.loginCommand()), ["longbridge", "auth", "login"])
 assert.deepStrictEqual(Array.from(context.checkCommand()), ["longbridge", "check", "--format", "json"])

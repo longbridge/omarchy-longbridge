@@ -29,7 +29,7 @@ Open Longbridge from the bar. The welcome page will:
 3. Offer **Log in to Longbridge** after installation.
 4. Verify the session with `longbridge check --format json`.
 
-The plugin does not download or execute an installer. Use the [Longbridge CLI documentation](https://open.longbridge.com/docs/cli/) to choose an installation method and for troubleshooting.
+The plugin does not download or execute an installer. Use the [Longbridge CLI installation guide](https://open.longbridge.com/docs/cli/install) to install it and for troubleshooting.
 
 For development, symlink this checkout into Omarchy:
 
