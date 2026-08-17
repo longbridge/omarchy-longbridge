@@ -205,7 +205,7 @@ Panel {
             id: headerIdentityText
             anchors.left: headerLogo.right
             anchors.leftMargin: Style.space(8)
-            anchors.right: panelMenu.left
+            anchors.right: tabSegments.left
             anchors.rightMargin: Style.space(9)
             anchors.verticalCenter: parent.verticalCenter
             spacing: Style.space(1)
@@ -235,46 +235,52 @@ Panel {
             panelFontFamily: root.fontFamily
             onInstallCliRequested: root.setupGuideOpen = true
           }
-        }
 
-        Rectangle {
-          id: tabSegments
-          visible: setup.ready && !root.setupGuideOpen
-          width: Style.space(190)
-          implicitHeight: Style.space(28)
-          radius: 0
-          color: "transparent"
-          border.width: 1
-          border.color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.18)
-          Row {
-            anchors.fill: parent
-            Repeater {
-              model: ["Watchlist", "Portfolio"]
-              Rectangle {
-                required property string modelData
-                required property int index
-                width: tabSegments.width / 2
-                height: tabSegments.height
-                radius: 0
-                color: index === root.activeTab
-                  ? Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
-                  : "transparent"
+          // The tabs ride in the header rather than owning a row of their own,
+          // which buys the list a row of height in a panel this short.
+          Rectangle {
+            id: tabSegments
+            anchors.right: panelMenu.left
+            anchors.rightMargin: Style.space(8)
+            anchors.verticalCenter: parent.verticalCenter
+            width: Style.space(150)
+            // Same height as the menu button beside it, so the header reads as
+            // one row of controls rather than two sizes.
+            height: panelMenu.height
+            radius: 0
+            color: "transparent"
+            border.width: 1
+            border.color: Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.18)
+            Row {
+              anchors.fill: parent
+              Repeater {
+                model: ["Watchlist", "Portfolio"]
                 Rectangle {
-                  visible: index === 1
-                  anchors.left: parent.left
-                  width: 1
-                  height: parent.height
-                  color: tabSegments.border.color
+                  required property string modelData
+                  required property int index
+                  width: tabSegments.width / 2
+                  height: tabSegments.height
+                  radius: 0
+                  color: index === root.activeTab
+                    ? Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.12)
+                    : "transparent"
+                  Rectangle {
+                    visible: index === 1
+                    anchors.left: parent.left
+                    width: 1
+                    height: parent.height
+                    color: tabSegments.border.color
+                  }
+                  Text {
+                    anchors.centerIn: parent
+                    text: modelData
+                    color: root.foreground
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.caption
+                    font.bold: index === root.activeTab
+                  }
+                  TapHandler { onTapped: root.activeTab = index }
                 }
-                Text {
-                  anchors.centerIn: parent
-                  text: modelData
-                  color: root.foreground
-                  font.family: root.fontFamily
-                  font.pixelSize: Style.font.caption
-                  font.bold: index === root.activeTab
-                }
-                TapHandler { onTapped: root.activeTab = index }
               }
             }
           }
