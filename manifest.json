@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "longbridge.omarchy",
   "name": "Longbridge",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "Longbridge",
   "license": "Apache-2.0",
-  "description": "Your Longbridge watchlist groups and portfolio in the Omarchy bar.",
+  "description": "Your Longbridge watchlist groups and portfolio in the Omarchy bar, with quotes streamed live from Longbridge Terminal.",
   "kinds": [
     "bar-widget"
   ],
@@ -15,13 +15,16 @@
   },
   "barWidget": {
     "displayName": "Longbridge",
-    "description": "Follow your Longbridge watchlist groups and portfolio.",
+    "description": "Watchlist groups with live streaming prices, intraday sparklines, and a quote detail view, plus portfolio P/L and allocation.",
     "category": "Finance",
     "aliases": [
+      "longbridge",
       "stocks",
       "quotes",
       "markets",
-      "watchlist"
+      "watchlist",
+      "portfolio",
+      "finance"
     ],
     "allowMultiple": false,
     "defaultSection": "right",
