@@ -238,6 +238,19 @@ Column {
     horizontalAlignment: Text.AlignRight
   }
 
+  // Only speaks up when there is something to say: the row count was noise
+  // next to a list that already shows it.
+  Text {
+    width: parent.width
+    visible: text !== ""
+    text: root.loading && root.rows.length === 0 ? "Refreshing…" : root.message
+    color: root.dimColor
+    font.family: root.panelFontFamily
+    font.pixelSize: Style.font.caption
+    elide: Text.ElideRight
+    horizontalAlignment: Text.AlignRight
+  }
+
   Rectangle {
     id: watchlistFrame
     visible: !root.detailOpen
