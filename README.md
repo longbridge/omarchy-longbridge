@@ -126,7 +126,7 @@ The only data written to disk is the watchlist cache described above: symbols, g
 
 The plugin does not read or copy Longbridge OAuth files. Setup, Watchlist, quotes, and Portfolio all run the installed CLI, which owns authentication and account access. The Watchlist calls only read methods plus `quote.subscribe`/`quote.unsubscribe`; the watchlist-editing and order methods `serve` exposes are never called. No trading or order placement is implemented.
 
-Red and green are reserved for rise/fall text, the sparklines that show the same movement, and the live dot. The portfolio's allocation bar uses a separate categorical palette — blue, violet, amber, teal — precisely so it cannot be read as gain or loss. Icons, surfaces, selection, and borders remain theme-neutral; only the official logo in the panel header uses brand colors.
+The active Omarchy theme supplies every UI color. Its green and red roles are reserved for rise/fall text and sparklines, with green also used for the live dot. Allocation colors, icons, surfaces, selection, and borders derive from inherited system roles rather than fixed hex values; only the official logo in the panel header uses brand colors.
 
 ## Development
 

@@ -11,6 +11,7 @@ Rectangle {
   required property color lossColor
   required property string panelFontFamily
   property bool selected: false
+  property bool striped: false
   property bool stale: false
   signal activated()
   signal chartRequested(string symbol)
@@ -23,10 +24,14 @@ Rectangle {
 
   width: ListView.view ? ListView.view.width : implicitWidth
   implicitHeight: Style.space(44)
-  radius: Style.cornerRadius
-  color: selected || hover.hovered
-    ? Qt.rgba(textColor.r, textColor.g, textColor.b, selected ? 0.10 : 0.05)
-    : "transparent"
+  radius: 0
+  color: selected
+    ? Qt.rgba(textColor.r, textColor.g, textColor.b, 0.10)
+    : hover.hovered
+      ? Qt.rgba(textColor.r, textColor.g, textColor.b, 0.05)
+      : striped
+        ? Qt.rgba(textColor.r, textColor.g, textColor.b, 0.025)
+        : "transparent"
 
   Column {
     anchors.left: parent.left

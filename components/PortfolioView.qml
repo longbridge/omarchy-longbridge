@@ -245,19 +245,19 @@ Column {
   }
 
   Rectangle {
+    id: holdingsFrame
     visible: !root.detailOpen
     width: parent.width
-    height: Math.min(Style.space(308), Math.max(Style.space(88), holdingsList.contentHeight))
-    radius: Style.cornerRadius
-    color: root.alpha(root.textColor, 0.025)
-    border.width: 1
-    border.color: root.alpha(root.textColor, 0.10)
+    height: Math.min(Style.space(386), Math.max(Style.space(88), holdingsList.contentHeight))
+    radius: 0
+    color: "transparent"
+    border.width: 0
     clip: true
 
     ListView {
       id: holdingsList
       anchors.fill: parent
-      anchors.margins: 1
+      anchors.margins: 0
       model: root.holdingKeys
       currentIndex: root.selectedIndex
       boundsBehavior: Flickable.StopAtBounds
@@ -272,6 +272,7 @@ Column {
         lossColor: root.lossColor
         panelFontFamily: root.panelFontFamily
         selected: index === root.selectedIndex
+        striped: index % 2 === 0
         onActivated: {
           root.selectedIndex = index
           root.detailOpen = true
